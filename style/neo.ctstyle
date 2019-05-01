@@ -1,0 +1,1053 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!--
+Copyright (C) 2013-2015 CartoType Ltd.
+For more information see http://www.cartotype.com.
+-->
+
+<CartoTypeStyleSheet name='OpenStreetMap Neo style' labelFormat=';ref+" "{font-style:italic}"("name:en")"' roadflags='0' background='#C4DFF6' border='lightgrey' landLayer='outline'>
+
+    <defs>
+        <macro id='standard-tunnel'>
+            <scale max='75000'>
+                <tunnel fade='0.5'/>
+            </scale>
+        </macro>
+
+        <macro id='major-road-label'>
+            <label font-size='75%,7pt' glow='white' glowWidth='7%,1' color='#777' case='upper' duplicate='1000m,512'/>
+        </macro>
+
+        <macro id='minor-road-bridge'>
+            <bridge width='125%,1.2pt' border='#FCFBE7+0.5black' borderWidth='10%,1' endPath='h 128 l 128 128'/>
+        </macro>
+
+        <macro id='mid-road-label'>
+            <label font-size='75%,6pt' glow='white' glowWidth='7%,1' color='#777' case='assume-title' duplicate='1000m,256'/>
+        </macro>
+
+        <macro id='mid-road-bridge'>
+            <bridge width='125%,1.2pt' border='#FCFBE7+0.5black' borderWidth='14%,1' endPath='h 128 l 128 128'/>
+        </macro>
+
+        <macro id='minor-road-label'>
+            <label font-size='75%,6pt' glow='white' glowWidth='7%,1' color='#777' case='assume-title'/>
+        </macro>
+
+        <macro id='island-label'>
+            <label color='#444' glow='white' glowWidth='7%,1' case='assume-title' position='horizontal' maxPolygonLabelLength='4' wrapWidth='20em' font-size='240m,5pt,16pt' font-style='italic' priory='-4'/>
+        </macro>
+
+        <macro id='point-island-label'>
+            <label maxScale='750000' color='#444' glow='white' glowWidth='7%,1' case='assume-title' position='point' maxPolygonLabelLength='4' wrapWidth='20em' font-size='240m,5pt,16pt' font-style='italic' priory='-4'/>
+        </macro>
+
+        <macro id='route-circle'>
+            <icon canOverlap='true' width='36m@6000_180m@40000,10pt'>
+                <svg width="110" height="110">
+                    <circle fill="~color~" cx="55" cy="55" r="50" opacity="0.2"/>
+                    <circle fill="~color~" cx="55" cy="55" r="10" opacity="0.5"/>
+                    <circle fill="none" stroke="~color~" cx="55" cy="55" r="49" stroke-width="8"/>
+                    <circle fill="none" stroke="white" cx="55" cy="55" r="53" stroke-width="1" opacity="0.5"/>
+                </svg>
+            </icon>
+        </macro>
+        <if exp='GL'>
+            <macro id='route-highlight'>
+                <highlight distance='6m@6000_30m@40000' fill='~color~' width='2m@6000_30m@40000,1.5pt'/>
+                <highlight distance='-6m@6000_-30m@40000' fill='~color~' width='2m@6000_30m@40000,1.5pt'/>
+                <line fill='none' width='8m@6000_50m@40000,1.5pt' truncationAtStart='20m@6000_100m@40000,6pt' truncationAtEnd='20m@6000_100m@40000,6pt'/>
+                <repeatedSymbol fill='~color~' gap='4000' maxScale='50000' path='#broad-arrow' isLabel='yes'/>
+            </macro>
+        </if>
+        <if exp='!GL'>
+            <macro id='route-highlight'>
+                <highlight distance='6m@6000_30m@40000' fill='~color~' width='2m@6000_30m@40000,1.5pt'/>
+                <highlight distance='-6m@6000_-30m@40000' fill='~color~' width='2m@6000_30m@40000,1.5pt'/>
+                <line fill='none' width='8m@6000_50m@40000,1.5pt' truncationAtStart='20m@6000_100m@40000,6pt' truncationAtEnd='20m@6000_100m@40000,6pt'/>
+                <repeatedSymbol fill='~color~' gap='4000' maxScale='50000' path='#broad-arrow'/>
+            </macro>
+        </if>
+
+        <macro id='traffic-highlight'>
+            <condition exp='(Type bitand 0xFF) le ~maxspeed~'>
+                <shape fill='~color~' opacity='0.3'/>
+                <condition exp='(Type bitand 0x100) != 0'>
+                    <highlight width='6m@6000_30m@75000,0.6pt' distance='6m@6000_30m@75000' fill='~color~' opacity='0.5'/>
+                </condition>
+                <condition exp='(Type bitand 0x200) != 0'>
+                    <highlight width='6m@6000_30m@75000,0.6pt' distance='-6m@6000_-30m@75000' fill='~color~' opacity='0.5'/>
+                </condition>
+            </condition>
+        </macro>
+
+        <icon id='dot-icon' width='5m,1.2pt,6pt'>
+            <svg width='100' height='100'>
+                <circle fill='dimgrey' stroke='none' cx='50' cy='50' r='49'/>
+            </svg>
+        </icon>
+
+        <icon id='peak-icon' width='10m,2.5pt,14pt'>
+            <svg width='100' height='100'>
+                <path fill='grey' stroke='none' d='M 0 100 L 100 100 L 50 0 z'/>
+            </svg>
+        </icon>
+
+        <hachure angle='90' color='blue+0.9white' id='wetland-hachure' interval='2.5pt' width='0.75pt'/>
+
+        <!-- The 'water' and 'water-minor' macros make it easy for water features to be in the land layers, for backward compatibility, as well as the waterway layers. -->
+        <macro id='water'>
+            <condition exp='OsmType in { "wat","rvb","doc","rsv" }'>
+                <shape fill='#C4DFF6'/>
+                <label glow='#C4DFF6+0.3white' color='#C4DFF6+0.3black' duplicate='1000m,256'/>
+            </condition>
+        </macro>
+
+        <macro id='water-minor'>
+            <!-- WETLAND -->
+            <condition exp='OsmType=="wet"'>
+                <shape fill='url(#wetland-hachure)'/>
+            </condition>
+        </macro>
+
+        <rampGradient id="pale-terrain-feet-height-ramp">
+            <stop offset='100ft-height' color='darkseagreen+0.7white'/>
+            <stop offset='600ft-height' color='palegreen+0.7white'/>
+            <stop offset='1200ft-height' color='palegoldenrod+0.7white'/>
+            <stop offset='3000ft-height' color='burlywood+0.7white'/>
+            <stop offset='4500ft-height' color='lightsalmon+0.7white'/>
+            <stop offset='6000ft-height' color='#BBBBBB+0.7white'/>
+            <stop offset='9000ft-height' color='#CCCCCC+0.7white'/>
+            <stop offset='12000ft-height' color='#EEEEEE+0.7white'/>
+            <stop offset='18000ft-height' color='white'/>
+            <stop offset='30000ft-height' color='white'/>
+            <range start='0' end='1' color='#00000000' />
+            <range start='1' end='100ft-height' color='darkseagreen+0.7white'/>
+        </rampGradient>
+
+        <def id='broad-arrow' string='M -450 -50 V 50 H 250 L -100 400 H 50 L 450 0 L 50 -400 H -100 L 250 -50 H -450 Z'/>
+        <def id='arrow' string='M -350 25 V -25 H 0 V -100 L 250 0 L 0 100 V 25 Z'/>
+
+        <macro id='one-way-arrow'>
+            <zoom min='16'>
+                <oneWayArrow path='#arrow' gap='2500' fill='#93A7AC' opacity='0.5' isLabel='yes'/>
+            </zoom>
+        </macro>
+
+        <icon id='pub-icon' width='16m,3pt,16pt'>
+            <svg viewBox="100 100 500 500">
+                <g style="fill-rule:nonzero">
+                    <path style="fill:none; stroke:darkgrey; stroke-width:14.94; stroke-linecap:round; stroke-linejoin:round" d="M 311.00 565.88 C 344.84 567.68 384.26 575.96 413.60 589.28 L 190.40 589.46       C 221.00 574.88 256.28 567.68 291.92 566.06 L 291.92 377.24 C 224.60 371.48 169.70 318.38 170.24 245.48       C 170.60 191.66 198.86 133.88 198.86 133.88 L 407.30 133.88 C 407.30 133.88 433.76 181.22 433.76 245.48       C 433.76 309.74 379.94 372.74 311.00 376.88 L 311.00 565.88"/>
+                    <path style="fill:darkgrey; stroke:none; stroke-width:14.94; stroke-linecap:round; stroke-linejoin:bevel" d="M 431.60 210.74 C 432.86 220.64 433.76 234.32 433.76 245.48 C 433.76 309.74 379.94 372.74 311.00 376.88       L 311.00 565.88 C 344.84 567.68 384.26 575.96 413.60 589.28 L 190.40 589.46       C 221.00 574.88 256.28 567.68 291.92 566.06 L 291.92 377.24 C 224.60 371.48 169.70 318.38 170.24 245.48       C 170.24 234.14 171.50 222.62 173.48 211.64 L 431.60 210.74 Z"/>
+                    <path style="fill:none; stroke:darkgrey; stroke-width:0.54; stroke-linecap:butt; stroke-linejoin:miter" d="M 431.60 210.74 C 432.86 220.64 433.76 234.32 433.76 245.48 C 433.76 309.74 379.94 372.74 311.00 376.88       L 311.00 565.88 C 344.84 567.68 384.26 575.96 413.60 589.28 L 190.40 589.46       C 221.00 574.88 256.28 567.68 291.92 566.06 L 291.92 377.24 C 224.60 371.48 169.70 318.38 170.24 245.48       C 170.24 234.14 171.50 222.62 173.48 211.64 L 431.60 210.74"/>
+                    <path style="fill:#FFFFFF; stroke:none; stroke-width:0.54; stroke-linecap:butt; stroke-linejoin:bevel" d="M 365.90 333.68 C 365.90 347.00 355.28 357.62 341.96 357.62 C 328.64 357.62 318.02 347.00 318.02 333.68       C 318.02 320.36 328.64 309.74 341.96 309.74 C 355.28 309.74 365.90 320.36 365.90 333.68 Z"/>
+                    <path style="fill:none; stroke:darkgrey; stroke-width:1.08; stroke-linecap:butt; stroke-linejoin:miter" d="M 365.90 333.68 C 365.90 347.00 355.28 357.62 341.96 357.62 C 328.64 357.62 318.02 347.00 318.02 333.68       C 318.02 320.36 328.64 309.74 341.96 309.74 C 355.28 309.74 365.90 320.36 365.90 333.68"/>
+                </g>
+            </svg>
+        </icon>
+
+        <icon id='station-icon' width='25m,3pt,16pt'>
+            <svg width='220' height='220'>
+                <circle fill='red+0.5orange' stroke='darkgrey' stroke-width='20' cx='110' cy='110' r='95'/>
+            </svg>
+        </icon>
+
+        <icon id='restaurant-icon' width='15m,3pt,16pt'>
+            <svg viewBox="-1 -1 115 115">
+                <g transform="translate(2.5,0)" fill='darkgrey' stroke='lightgrey' stroke-width='2'>
+                    <path d="M 94,4 C 90,0 74,18 67,26 C 65,28 62,32 68,38 C 15,89 5,96 12,103 C 19,110 26,100 76,46 C 82,52 87,49 89,47 C 97,40 114,24 110,20 C 106,16 91,40 87,37 C 83,24 106,16 102,12 C 98,8 81,33 77,29 C 73,25 98,8 94,4 z"/>
+                    <path d="M 35,33 C 79,81 98,96 90,103 C 81,111 70,91 26,42 C 6,57 -9,16 1,6 C 11,-6 55,13 35,33 z"/>
+                </g>
+            </svg>
+        </icon>
+
+        <icon id='cafe-icon' width='12m,2.5pt,16pt'>
+            <svg width="14" height="14">
+                <path
+                   d="M 10.960919 10.464368 A 4.027586 4.027586 0 1 1  2.9057474,10.464368 A 4.027586 4.027586 0 1 1  10.960919 10.464368 z"
+                   transform="matrix(0.8945367,0,0,0.7056598,-1.1054313,1.2736111)"
+                   style="fill:darkgrey;fill-opacity:1;stroke-width:2;stroke-miterlimit:4;stroke-dasharray:none"
+		   />
+                <rect
+                   width="7.205647"
+                   height="6.1578946"
+                   x="1.4938664"
+                   y="2.5"
+                   style="fill:darkgrey;fill-opacity:1;stroke:none;stroke-width:2;stroke-miterlimit:4;stroke-dasharray:none"
+		   />
+                <path
+                   d="M 14.418391 6.4367814 A 2.4275863 2.6114943 0 1 1  9.5632184,6.4367814 A 2.4275863 2.6114943 0 1 1  14.418391 6.4367814 z"
+                   transform="matrix(0.8886538,0,0,1.0890316,-0.7987018,-0.7693869)"
+                   style="fill:none;fill-opacity:0;stroke:darkgrey;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+		   />
+            </svg>
+        </icon>
+
+        <icon id='hotel-icon' width='20m,3pt,16pt'>
+            <svg viewBox="0 0 90 90" width='16' height="18.64">
+                <path fill='brown' d="M 0,60 C 0,65 10,65 10,60 L 10,50 L 35,70 L 35,85 C 35,90 45,90 45,85 L 45,70 L 75,70 L 75,85 C 75,90 85,90 85,85 L 85,60 L 40,60 L 5,30 C 9,20 45,20 50,25 L 50,10 C 50,5 40,5 40,10 L 40,15 L 10,15 L 10,10 C 10,5 0,5 0,10 C 0,10 0,60 0,60 z M 10,35 C 15,25 45,25 55,35 L 85,60 C 75,50 40,50 40,60 L 10,35 z "/>
+            </svg>
+        </icon>
+
+        <icon id='parking-icon' width='15m,3pt,16pt'>
+            <svg width="20" height="20">
+                <rect x="0" y="0" width="20" height="20" rx="2" ry="2" style="stroke-width:0;fill:darkgrey" />
+                <path d="M4,17 L4,3 10,3 C14,3 16,5 16,7.5 C16,10 14,12 10,12 L8.5,12 8.5,17 z M8.5,9 L10,9 C13,9 13,6 10,6 L8.5,6 8.5,9 z" style="stroke-width:0;fill:#ffffff" />
+            </svg>
+        </icon>
+
+        <icon id='theatre-icon' width='15m,3pt,16pt'>
+            <svg width="23.3" viewBox="0 0 550 550" height="23.3">
+                <g stroke="none" transform="translate(55,0)" fill-opacity="1" fill-rule="nonzero" fill="darkgrey">
+                    <path d="M192.4,22c0,0,50,26,112,20s94-39,98-42s17,32,17,32l4,33l-3,29l5,24l7,39l-5,32l-6,32l-19,55l-25,49l-59,21l-30-14l-22-22l-29-47l4-40l-20-28l-18-24l1-34l2-54l-8-35L192.4,22z"/>
+                    <path fill="none" stroke="#FFFFFF" stroke-width="10" d="M210.4,44.5c0,0,43.8,22.8,98,17.5s82.3-34.1,85.8-36.8s14.9,28,14.9,28l3.5,28.9l-2.6,25.4l4.4,21l6.1,34.1l-4.4,28l-5.3,28l-16.6,48.1l-21.9,42.9L320.6,328l-26.3-12.3l-19.3-19.3l-25.4-41.1l3.5-35l-17.5-24.5l-15.8-21l0.9-29.8l1.8-47.3l-7-30.6L210.4,44.5z"/>
+                    <path fill="#FFFFFF" d="M293.4,152c0,8.3-11.4,15-25.5,15s-25.5-6.7-25.5-15s11.4-15,25.5-15S293.4,143.7,293.4,152z"/>
+                    <path fill="#FFFFFF" d="M406.4,140.5c0,8.6-13.2,15.5-29.5,15.5s-29.5-6.9-29.5-15.5s13.2-15.5,29.5-15.5S406.4,131.9,406.4,140.5z"/>
+                    <path fill="none" stroke="#FFFFFF" stroke-width="10" d="M248.4,124l14-43l15,27"/>
+                    <path fill="none" stroke="#FFFFFF" stroke-width="10" d="M336.4,110l7-32l35,23"/>
+                    <path fill="none" stroke="#FFFFFF" stroke-width="10" d="M317.4,146l-7,72l22-1L317.4,146z"/>
+                    <path xmlns="" fill="none" stroke="#FFFFFF" stroke-width="10" d="M305.4,297c0,0,2-55,27-57s37,16,41,30"/>
+                    <path fill="#FFFFFF" stroke="darkgrey" stroke-width="10" d="M207.4,90c0,0-19,18-61,17s-42,5-83-33s-31-38-31-38l-9,105l-5,22l-13,15l26,128l37,82c0,0,3,9,38,9s30-10,40-20s15-35,34-49s41-47,41-47l17-21l3-34l-23-29l-12-32L207.4,90z"/>
+                    <path fill="none" stroke="darkgrey" stroke-width="10" d="M51.4,150c0,0-2-15,25-15s31,17,31,17"/>
+                    <path fill="none" stroke="darkgrey" stroke-width="10" d="M153.4,168c0,0,6-11,12-14s22,5,22,5"/>
+                    <path d="M51.4,193l23-19c0,0,12-2,25,2s7,14,7,14L51.4,193z"/>
+                    <path d="M164.4,199c0,0,14-13,27-10s16,19,16,19s-7,6-26,1S164.4,199,164.4,199z"/>
+                    <path d="M125.4,188l-25,83h29L125.4,188z"/>
+                    <path d="M61.4,258c0,0,0-4,14,16s10,36,44,34s38-45,55-42s13,8,7,20s-23,23-32,35s5,40-39,38s-43-44-49-48S61.4,258,61.4,258z"/>
+                </g>
+            </svg>
+        </icon>
+
+        <icon id='cinema-icon' width='15m,3pt,16pt'>
+            <svg width="23.3" viewBox="0 0 420 420" height="23.3">
+                <g transform="translate(50,0)">
+                    <path fill="darkgrey" d="M123.7,393.2l-35.9,9L0,50.9l35.9-9L123.7,393.2z"/>
+                    <path fill="darkgrey" d="M291.5,351.2l-35.9,9L167.8,9l35.9-9L291.5,351.2z"/>
+                    <path fill="darkgrey" d="M201.9,27.8l9,35.9L19.8,111.5l-9-35.9L201.9,27.8z"/>
+                    <path fill="darkgrey" d="M234.8,159.2l9,35.9L52.6,242.9l-9-35.9L234.8,159.2z"/>
+                    <path fill="darkgrey" d="M267.7,290.7l9,35.9L85.5,374.4l-9-35.9L267.7,290.7z"/>
+                    <path fill="#FFFFFF" d="M40.5,97.5l-21.3,5.3l-5.3-21.3l21.3-5.3L40.5,97.5z"/>
+                    <path fill="#FFFFFF" d="M56.9,163l-21.3,5.3L30.2,147l21.3-5.3L56.9,163z"/>
+                    <path fill="#FFFFFF" d="M73.3,228.5l-21.3,5.3l-5.3-21.3l21.3-5.3L73.3,228.5z"/>
+                    <path fill="#FFFFFF" d="M89.6,294l-21.3,5.3L63,278l21.3-5.3L89.6,294z"/>
+                    <path fill="#FFFFFF" d="M106,359.4l-21.3,5.3l-5.3-21.3l21.3-5.3L106,359.4z"/>
+                    <path fill="#FFFFFF" d="M209.1,54.3l-21.3,5.3l-5.3-21.3l21.3-5.3L209.1,54.3z"/>
+                    <path fill="#FFFFFF" d="M225.4,119.8l-21.3,5.3l-5.3-21.3l21.3-5.3L225.4,119.8z"/>
+                    <path fill="#FFFFFF" d="M241.8,185.3l-21.3,5.3l-5.3-21.3l21.3-5.3L241.8,185.3z"/>
+                    <path fill="#FFFFFF" d="M258.2,250.8l-21.3,5.3l-5.3-21.3l21.3-5.3L258.2,250.8z"/>
+                    <path fill="#FFFFFF" d="M274.6,316.3l-21.3,5.3l-5.3-21.3l21.3-5.3L274.6,316.3z"/>
+                </g>
+            </svg>
+        </icon>
+
+        <icon id='atm-icon' width='11m,3pt,60pt'>
+            <svg viewBox='0 0 63 63' fill='lightgrey' stroke='grey' stroke-width='1'>
+                <g transform='translate(3,3)'>
+                    <rect x='0' y='20' width='50' height='20'/>
+                </g>
+                <g transform='translate(6,6)'>
+                    <rect x='0' y='20' width='50' height='20'/>
+                </g>
+                <g transform='translate(9,9)'>
+                    <rect x='0' y='20' width='50' height='20'/>
+                </g>
+                <g transform='translate(12,12)'>
+                    <rect x='0' y='20' width='50' height='20'/>
+                    <rect fill='grey' stroke='none' x='13' y='25' width='2' height='10'/>
+                    <circle fill='none' stroke-width='2' cx='23.5' cy='30' r='4.5'/>
+                    <circle fill='none' stroke-width='2' cx='36' cy='30' r='4.5'/>
+                </g>
+            </svg>
+        </icon>
+
+        <icon id='pharmacy-icon' width='20m,3pt,16pt'>
+            <svg viewBox="0 0 36 36" height="62">
+                <rect style="fill:darkgrey" x="0" y="0" width="36" height="36" rx="2" ry="2"/>
+                <path style="fill:#ffffff" d="M20.14 17.3 L20.14 9.44 L11.86 9.44 L11.86 17.3 L4 17.3 
+			L4 25.58 L11.86 25.58 L11.86 33.44 L20.14 33.44 L20.14 25.58 L28 25.58 L28 17.3 L20.14 17.3 Z
+			M0.5 37.44 L31.5 37.44 a0.5 0.5 -180 0 0 0.5 -0.5 L32 5.94 a0.5 0.5 -180 0 0 -0.5 -0.5
+			L0.5 5.44 a0.5 0.5 -180 0 0 -0.5 0.5 L0 36.94 a0.5 0.5 -180 0 0 0.5 0.5 Z M2 35.44 L2 
+			7.44 L30 7.44 L30 35.44 L2 35.44 Z" transform="translate(2,-3.44)"/>
+            </svg>
+        </icon>
+
+        <icon id='toilet-icon' width='15m,3pt,16pt'>
+            <svg viewBox="0 0 200 200" width="18.64" height="18.64">
+                <rect style="fill:darkgrey;fill-opacity:1" width="200" height="200" x="0" y="0" rx="40" ry="40"/>
+                <rect style="fill:#ffffff;stroke:#ffffff;stroke-width:5px;stroke-linejoin:round;stroke-opacity:1" y="30.489416" x="100.1455" height="141.07143" width="11.428572"/>
+                <path style="fill:#ffffff;stroke:#ffffff;stroke-opacity:1" d="M 162.85978,41.739417 C 162.85978,48.366834 157.4872,53.739417 150.85978,53.739417 C 144.23236,53.739417 138.85978,48.366834 138.85978,41.739417 C 138.85978,35.112 144.23236,29.739417 150.85978,29.739417 C 157.4872,29.739417 162.85978,35.112 162.85978,41.739417 L 162.85978,41.739417 z "/>
+                <path style="fill:#ffffff;stroke:#ffffff;stroke-linejoin:round;stroke-opacity:1" d="M 69.645503,42.989417 C 69.645503,49.616834 64.27292,54.989417 57.645503,54.989417 C 51.018086,54.989417 45.645503,49.616834 45.645503,42.989417 C 45.645503,36.362 51.018086,30.989417 57.645503,30.989417 C 64.27292,30.989417 69.645503,36.362 69.645503,42.989417 z "/>
+                <path style="fill:#ffffff;fill-rule:evenodd;stroke:#ffffff;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1" d="M 54.920897,128.44734 L 59.466584,128.44734 L 60.224198,168.6009 L 67.547804,168.6009 L 68.305419,128.1948 L 80.427249,127.94226 L 67.295266,79.707479 L 70.8308,77.687174 L 81.437402,112.53743 L 89.266084,108.24428 L 73.356181,61.777271 L 41.283838,60.767119 L 24.868859,109.25444 L 31.939927,112.03236 L 43.556681,77.687174 L 46.839677,78.19225 L 33.707694,127.43718 L 44.819372,127.68972 L 46.334601,168.85344 L 53.658207,168.85344 L 54.920897,128.44734 z "/>
+                <path style="fill:#ffffff;fill-rule:evenodd;stroke:#ffffff;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1;fill-opacity:1" d="M 133.96533,60.514581 L 164.77498,60.262042 L 174.87651,68.090725 L 176.64428,113.29505 L 167.80544,113.04251 L 166.79529,77.182098 L 162.2496,76.677021 L 162.37587,168.97971 L 153.91584,169.23224 L 152.14808,114.3052 L 147.85493,114.05266 L 146.84478,169.61105 L 139.01609,169.10598 L 138.51102,77.434636 L 133.71279,77.434636 L 134.21787,112.53743 L 125.63157,112.78997 L 124.87396,68.595801 L 133.96533,60.514581 z "/>
+            </svg>
+        </icon>
+
+        <icon id='airport-icon' width='100m,6pt,16pt'>
+            <svg viewBox="0 0 10 10" fill="blue" stroke="none" width="24" height="24">
+                <path fill='darkgrey' d="M 9.2,5 C 9.2,4.5 9.8,3.2 10,3 L 9,3 L 8,4 L 5.5,4 L 8,0 L 6,0 L 3,4 C 2,4 1,4.2 0.5,4.5 C 0,5 0,5 0.5,5.5 C 1,5.8 2,6 3,6 L 6,10 L 8,10 L 5.5,6 L 7.8,6 L 9,7 L 10,7 C 9.8,6.8 9.2,5.5 9.2,5 z "/>
+            </svg>
+        </icon>
+
+        <icon id='fuel-icon' width='20m,3pt,16pt'>
+            <svg width="18.64" height="18.64" viewBox="0 0 115 115" stroke-width="3px">
+                <path fill='darkgrey' d="M 22.7283 108.087 C 4.26832 107.546 23.6818 43.3596 32.6686 21.0597 C 33.8491 17.0245 60.28 18.4952 
+		   60.0056 19.8857 C 59.0889 25.9148 54.8979 23.2429 52.0142 26.8579 L 51.7464 36.8066 C 48.6085 40.8144 40.2357 34.4677
+		   38.078 42.8773 C 31.3694 92.5727 45.0689 108.819 22.7283 108.087 z M 85.3122 9.52799 L 29.1766 9.52847 C 28.4855 17.5896
+		   -11.559 113.573 22.9292 113.284 C 48.5214 113.073 39.5312 104.08 42.6984 51.03 C 41.8513 49.3228 50.871 48.6585 50.8739
+		   51.4448 L 51.0453 116.604 L 97.6129 116.188 L 97.6129 26.544 C 96.0669 24.2073 93.899 25.2958 90.584 22.394 C 87.7907
+		   19.4131 92.2353 9.52799 85.3122 9.52799 z M 64.0766 35.3236 C 61.5443 36.7258 61.5443 45.2814 64.0766 46.6836 C 68.3819
+		   49.0684 80.2848 49.0684 84.5902 46.6836 C 87.1225 45.2814 87.1225 36.7258 84.5902 35.3236 C 80.2848 32.9393 68.3819
+		   32.9393 64.0766 35.3236 z "/>
+            </svg>
+        </icon>
+
+        <icon id='traffic-light-icon' width='8m,6pt'>
+            <svg viewBox="0 0 560 560">
+                <g transform="translate(167,0)" fill="dimgrey">
+                    <path d="M212.1,105c0,58-47.5,105-106,105c-58.6,0-106-47-106-105 C0,47,47.5,0,106,0C164.6,0,212.1,47,212.1,105z"/>
+                    <path d="M212.1,452.3c0,58-47.5,105-106,105c-58.6,0-106-47-106-105 c0-58,47.5-105,106-105C164.6,347.3,212.1,394.3,212.1,452.3z"/>
+                    <path d="M211.3,458.9H0V106.7h211.3V458.9z"/>
+                    <path fill="ncsred" d="M190,103c0,46.4-37.6,84-84,84 c-46.4,0-84-37.6-84-84s37.6-84,84-84C152.4,19,190,56.6,190,103z"/>
+                    <path fill="ncsgreen" d="M190,455c0,46.4-37.6,84-84,84 c-46.4,0-84-37.6-84-84c0-46.4,37.6-84,84-84C152.4,371.1,190,408.7,190,455z"/>
+                    <path fill="ncsyellow" d="M190,279c0,46.4-37.6,84-84,84 c-46.4,0-84-37.6-84-84c0-46.4,37.6-84,84-84C152.4,195,190,232.6,190,279z"/>
+                </g>
+            </svg>
+        </icon>
+
+    </defs>
+
+    <layer name='map-extent'>
+        <shape fill='#C4DFF6'/>
+    </layer>
+
+    <layer name='outline'>
+        <shape fill='#FCFBE7'/>
+        <condition exp='@=2'> <!-- load only polygon objects - line objects sometimes occur and we don't want them -->
+            <condition exp='OsmType=="isl"'>
+                <macro ref='island-label'/>
+            </condition>
+        </condition>
+    </layer>
+
+    <layer name='image'>
+        <shape fill='white'/>
+    </layer>
+
+    <zoom max='15'>
+        <layer name='terrain-height-feet'>
+            <shape fill='url(#pale-terrain-feet-height-ramp)'/>
+        </layer>
+
+        <layer name='terrain-shadow'>
+            <shape fill='#AA9'/>
+        </layer>
+        <layer name='urban-area'>
+            <shape fill='#FCFBE7+0.02black'/>
+        </layer>
+    </zoom>
+
+    <!-- BOUNDARY LAYERS -->
+
+    <scale min='1500000'>
+        <layer name='boundary/major'>
+            <condition exp='@=1'>
+                <!-- lines -->
+                <line fill='#324+0.7white' width='0.6pt' dashArray='5 1 1 1'/>
+            </condition>
+            <condition exp='@=2'>
+                <!-- polygons -->
+                <label color='#324+0.7white' glow='white' font-size='8pt' position='horizontal' wrapWidth='20em' case='assume-title' priority='-4'/>
+            </condition>
+        </layer>
+    </scale>
+
+    <scale min='750000' max='3000000'>
+        <layer name='boundary/minor'>
+            <condition exp='(Type bitand #FFFF)=4'>
+                <condition exp='@=1'>
+                    <!-- lines -->
+                    <line fill='#324+0.7white' width='0.6pt' dashArray='2 1 1 1'/>
+                </condition>
+                <condition exp='@=2'>
+                    <!-- polygons -->
+                    <label color='#324+0.7white' font-size='6pt' position='horizontal' priority='-2' wrapWidth='20em' case='assume-title'/>
+                </condition>
+            </condition>
+        </layer>
+    </scale>
+
+    <!-- PLACE LAYERS -->
+    <zoom min='7' max='16'>
+        <layer name='place/major'>
+            <label color='#444' glow='white' glowWidth='7%,1' case='assume-title' priority='0' position='point' wrapWidth='20em'/>
+            <zoom max='15'>
+                <condition exp='OsmType=="cit"'>
+                    <label priority='-4' font-size='240m,8pt,24pt'/>
+                </condition>
+            </zoom>
+            <zoom min='9'>
+                <condition exp='OsmType=="tow"'>
+                    <label priority='-3' font-size='220m,7pt,22pt'/>
+                </condition>
+            </zoom>
+            <condition exp='OsmType=="isl"'>
+                <condition exp='@=0'>
+                    <macro ref='point-island-label'/>
+                </condition>
+                <condition exp='@=2'>
+                    <macro ref='island-label'/>
+                </condition>
+            </condition>
+        </layer>
+    </zoom>
+    <zoom min='12'>
+        <layer name='place/minor'>
+            <label font-size='110m,5pt,16pt' color='#444' glow='white' glowWidth='7%,1' case='assume-title' priority='0' position='point' wrapWidth='20em'/>
+            <condition exp='OsmType=="vil"'/>
+
+            <scale max='100000'>
+                <condition exp='OsmType=="sub"'/>
+            </scale>
+
+            <scale max='80000'>
+                <condition exp='OsmType=="ham"'/>
+            </scale>
+        </layer>
+    </zoom>
+
+    <!-- LAND LAYERS -->
+    <layer name='land/major'>
+        <label glowWidth='7%,1' case='assume-title' color='#FCFBE7+0.4black' priority='0' position='horizontal' maxPolygonLabelLength='3' wrapWidth='10em' wrap='yes'/>
+        <zoom min='12'>
+            <!-- FOREST -->
+            <condition exp='OsmType in { "for","woo" }'>
+                <shape fill='#C3D9AD80'/>
+                <label color='#C3D9AD+0.4black'/>
+            </condition>
+        </zoom>
+        <zoom min='10'>
+            <!-- NATURAL -->
+            <condition exp='OsmType=="nat"'>
+                <shape fill='#C3D9AD+0.25black' opacity='0.2' border='#C3D9AD+0.25black' borderWidth='1'/>
+                <label color='#C3D9AD+0.4black'/>
+            </condition>
+        </zoom>
+        <!-- BODY OF WATER -->
+        <macro ref='water'/>
+    </layer>
+    <zoom min='12'>
+        <layer name='land/minor'>
+            <label glowWidth='7%,1' case='assume-title' color='#FCFBE7+0.4black' priority='0' position='horizontal' maxPolygonLabelLength='3' wrapWidth='10em' wrap='yes'/>
+            <!-- COMMERCE -->
+            <condition exp='OsmType in { "cmr","ind" }'>
+                <shape fill='#FCFBE780+0.03black'/>
+            </condition>
+            <!-- CEMETERY -->
+            <condition exp='OsmType=="cem"'>
+                <shape fill='#D6DED2'/>
+            </condition>
+            <!-- SCHOOLS -->
+            <condition exp='OsmType in { "col","sch","uni" }'>
+                <shape fill='#FFF5CC'/>
+                <label color='#FFF5CC+0.4black'/>
+            </condition>
+            <!-- SPORTS -->
+            <condition exp='OsmType in { "gol","spp","spo","stm" }'>
+                <shape fill='#B8E6B880'/>
+                <label color='#B8E6B8+0.4black'/>
+            </condition>
+            <!-- GRASS -->
+            <condition exp='OsmType=="gra"'>
+                <shape fill='#E6F2C180'/>
+            </condition>
+            <!-- HOSPITAL -->
+            <condition exp='OsmType=="hos"'>
+                <shape fill='#E5C6C3'/>
+                <label color='#E5C6C3+0.4black'/>
+            </condition>
+            <!-- PARKING -->
+            <condition exp='OsmType=="pkg"'>
+                <shape fill='#EEE'/>
+            </condition>
+            <!-- PARKS -->
+            <condition exp='OsmType in { "par","com" }'>
+                <shape fill='#DAF2C180'/>
+                <label color='#DAF2C1+0.4black'/>
+            </condition>
+            <!-- SUMMITS: FELL, PEAK. VOLCANO -->
+            <zoom min='13'>
+                <condition exp='OsmType in { "fel","pea","vol" }'>
+                    <label labelFormat=';+" "{font-style:italic}"("name:en")"+" "_ele' color='grey' wrapWidth='10em'/>
+                    <icon ref='peak-icon'/>
+                </condition>
+            </zoom>
+            <macro ref='water-minor'/>
+        </layer>
+    </zoom>
+
+    <!-- WATERWAY LAYERS -->
+        <layer name='waterway/major'>
+            <label font-style='italic' color='#C4DFF6+0.3black' case='assume-title' glow='#C4DFF6+0.6white' glowWidth='7%,1' priority='1' position='centralpath' duplicate='1000m,256'/>
+            <line fill='#C4DFF6'/>
+            <shape fill='#C4DFF6'/>
+
+            <macro ref='water'/>
+
+            <zoom min='8'>
+            <!-- RIVER -->
+            <condition exp='OsmType=="riv"'>
+                <line width='20m,0.6pt'/>
+                <label font-size='75%,5pt' maxScale='400000'/>
+            </condition>
+
+            <!-- CANAL -->
+            <condition exp='OsmType=="can"'>
+                <line width='8m,0.6pt'/>
+                <label font-size='75%,5pt' maxScale='400000'/>
+            </condition>
+
+            </zoom>
+        </layer>
+    <zoom min='14'>
+        <layer name='waterway/minor'>
+
+            <label font-style='italic' color='#C4DFF6+0.3black' case='assume-title' glow='#C4DFF6+0.6white' glowWidth='7%,1' priority='1' position='centralpath' duplicate='1000m,256'/>
+            <line fill='#C4DFF6'/>
+            <shape fill='#C4DFF6'/>
+
+            <!-- STREAM -->
+            <condition exp='OsmType=="str"'>
+                <line width='8m,0.6pt'/>
+                <label font-size='75%,5pt'/>
+            </condition>
+
+            <!-- DRAIN -->
+            <condition exp='OsmType=="dra"'>
+                <line width='4m,0.6pt'/>
+                <label font-size='75%,5pt'/>
+            </condition>
+
+            <macro ref='water-minor'/>
+        </layer>
+    </zoom>
+
+    <zoom min='16'>
+        <layer name='building'>
+            <zoom min='17'>
+                <shape fill='#E4E0E0' height='yes'/>
+                <label font-size='8m,3pt,6pt' glowWidth='7%,1' case='assume-title' color='#E4E0E0+0.2black' position='horizontal' maxPolygonLabelLength='3' wrapWidth='10em' labelFormat=';+" "{font-style:italic}"("name:en")"+" "addr:housenumber+" "addr:housename' wrap='yes'/>
+            </zoom>
+            <zoom max='17'>
+                <shape fill='#E4E0E0' height='yes'/>
+            </zoom>
+        </layer>
+    </zoom>
+
+    <zoom min='17'>
+        <layer name='address'>
+            <label font-size='8m,3pt,6pt' glowWidth='7%,1' case='assume-title' color='#E4E0E0+0.2black' position='point' labelFormat=';+" "{font-style:italic}"("name:en")"+" "addr:housenumber+" "addr:housename'/>
+        </layer>
+    </zoom>
+
+    <!-- START OF ROAD LAYER GROUP -->
+    <layerGroup>
+
+        <zoom max='8'>
+
+            <layer name='road/major' road='true'>
+
+                <!-- TRUNK -->
+                <condition exp='RoadType=="trunk"'>
+                    <line width='16m,0.5pt' fill='#E68A5C'/>
+                    <macro ref='major-road-label'/>
+                    <macro ref='standard-tunnel'/>
+                </condition>
+
+                <!-- MOTORWAY -->
+                <condition exp='RoadType=="motorway"'>
+                    <line width='32m,0.6pt' fill='#E65C5C'/>
+                    <macro ref='major-road-label'/>
+                    <macro ref='standard-tunnel'/>
+                </condition>
+
+            </layer>
+
+        </zoom>
+
+        <zoom min='8' max='14'>
+
+            <layer name='road/mid' road='true'>
+
+                <!-- SECONDARY -->
+                <condition exp='RoadType in { "secondary", "secondary link" }'>
+                    <line width='16m,0.6pt' fill='#FFE873'/>
+                    <macro ref='standard-tunnel'/>
+                    <macro ref='mid-road-bridge'/>
+                    <macro ref='mid-road-label'/>
+                </condition>
+
+            </layer>
+
+            <layer name='road/major' road='true'>
+
+                <!-- PRIMARY -->
+                <condition exp='RoadType in { "primary", "primary link" }'>
+                    <line width='12m@6000_72m@75000,0.3pt' fill='#FFC859'/>
+                    <macro ref='major-road-label'/>
+                    <macro ref='standard-tunnel'/>
+                </condition>
+
+                <!-- TRUNK LINK -->
+                <condition exp='RoadType == "trunk link"'>
+                    <line width='10m@6000_60m@75000,0.3pt' fill='#E68A5C'/>
+                    <macro ref='standard-tunnel'/>
+                </condition>
+
+                <!-- TRUNK -->
+                <condition exp='RoadType == "trunk"'>
+                    <line width='12m@6000_72m@75000,0.3pt' fill='#E68A5C'/>
+                    <macro ref='major-road-label'/>
+                    <macro ref='standard-tunnel'/>
+                </condition>
+
+                <!-- MOTORWAY LINK -->
+                <condition exp='RoadType == "motorway link"'>
+                    <line width='10m6000_60m@75000,0.6pt' fill='#E65C5C'/>
+                    <macro ref='standard-tunnel'/>
+                </condition>
+
+                <!-- MOTORWAY -->
+                <condition exp='RoadType == "motorway"'>
+                    <line width='20m@6000_120m@75000,0.6pt' fill='#E65C5C'/>
+                    <macro ref='major-road-label'/>
+                    <macro ref='standard-tunnel'/>
+                </condition>
+
+            </layer>
+
+        </zoom>
+
+        <zoom min='14'>
+
+            <layer name='road/minor' road='true'>
+
+                <!-- PEDESTRIAN -->
+                <condition exp='RoadType == "pedestrian"'>
+                    <line width='8m,0.3pt' fill='#FAFAF5' border='#FCFBE7+0.1black' borderWidth='10%'/>
+                    <macro ref='minor-road-label'/>
+                    <macro ref='standard-tunnel'/>
+                    <macro ref='minor-road-bridge'/>
+                </condition>
+
+                <!-- SERVICE -->
+                <condition exp='RoadType == "service"'>
+                    <line width='12m,0.3pt' fill='white' border='#FCFBE7+0.1black' borderWidth='10%'/>
+                    <macro ref='minor-road-label'/>
+                    <macro ref='standard-tunnel'/>
+                    <macro ref='minor-road-bridge'/>
+                    <macro ref='one-way-arrow'/>
+                </condition>
+
+                <!-- TRACK -->
+                <condition exp='RoadType == "track"'>
+                    <line width='4m,0.3pt' fill='white' border='#FCFBE7+0.1black' borderWidth='10%'/>
+                    <macro ref='minor-road-label'/>
+                    <macro ref='standard-tunnel'/>
+                    <macro ref='minor-road-bridge'/>
+                    <macro ref='one-way-arrow'/>
+                </condition>
+
+                <!-- RESIDENTIAL -->
+                <condition exp='RoadType == "residential"'>
+                    <line width='12m,0.3pt' fill='white' border='#FCFBE7+0.4black' borderWidth='10%'/>
+                    <macro ref='minor-road-label'/>
+                    <macro ref='standard-tunnel'/>
+                    <macro ref='minor-road-bridge'/>
+                    <macro ref='one-way-arrow'/>
+                </condition>
+
+                <!-- UNCLASSIFIED -->
+                <condition exp='RoadType == "unclassified"'>
+                    <line width='14m,0.3pt' fill='white' border='#FCFBE7+0.4black' borderWidth='10%'/>
+                    <macro ref='minor-road-label'/>
+                    <macro ref='standard-tunnel'/>
+                    <macro ref='minor-road-bridge'/>
+                    <macro ref='one-way-arrow'/>
+                </condition>
+
+            </layer>
+
+            <layer name='road/mid' road='true'>
+
+                <!-- TERTIARY -->
+                <condition exp='RoadType in { "tertiary", "tertiary link" }'>
+                    <line width='16m,0.3pt' fill='white' border='#FCFBE7+0.4black' borderWidth='10%'/>
+                    <macro ref='standard-tunnel'/>
+                    <macro ref='mid-road-label'/>
+                    <macro ref='mid-road-bridge'/>
+                    <macro ref='one-way-arrow'/>
+                </condition>
+
+                <!-- SECONDARY -->
+                <condition exp='RoadType in { "secondary", "secondary link" }'>
+                    <line width='16m,0.6pt' fill='#FFE873+0.1white' border='#FFE873+0.1black' borderWidth='10%'/>
+                    <macro ref='standard-tunnel'/>
+                    <macro ref='mid-road-label'/>
+                    <macro ref='mid-road-bridge'/>
+                    <macro ref='one-way-arrow'/>
+                </condition>
+
+            </layer>
+
+            <layer name='road/major' road='true'>
+
+                <!-- PRIMARY -->
+                <condition exp='RoadType in { "primary", "primary link" }'>
+                    <line width='12m@6000_72m@75000,0.3pt' fill='#FFC859+0.1white' border='#FFC859+0.1black' borderWidth='10%'/>
+                    <macro ref='major-road-label'/>
+                    <macro ref='standard-tunnel'/>
+                    <macro ref='one-way-arrow'/>
+                </condition>
+
+                <!-- TRUNK LINK -->
+                <condition exp='RoadType == "trunk link"'>
+                    <line width='10m@6000_60m@75000,0.3pt' fill='#E68A5C+0.1white' border='#E68A5C+0.1black' borderWidth='10%'/>
+                    <macro ref='major-road-label'/>
+                    <macro ref='standard-tunnel'/>
+                    <macro ref='one-way-arrow'/>
+                </condition>
+
+                <!-- TRUNK -->
+                <condition exp='RoadType == "trunk"'>
+                    <line width='12m@6000_72m@75000,0.3pt' fill='#E68A5C+0.1white' border='#E68A5C+0.1black' borderWidth='10%'/>
+                    <macro ref='major-road-label'/>
+                    <macro ref='standard-tunnel'/>
+                    <macro ref='one-way-arrow'/>
+                </condition>
+
+                <!-- MOTORWAY LINK -->
+                <condition exp='RoadType == "motorway link"'>
+                    <line width='10m@6000_60m@75000,0.6pt' fill='#E65C5C+0.1white' border='#E65C5C+0.1black' borderWidth='10%'/>
+                    <macro ref='major-road-label'/>
+                    <macro ref='standard-tunnel'/>
+                </condition>
+
+                <!-- MOTORWAY -->
+                <condition exp='RoadType == "motorway"'>
+                    <line width='20m@6000_120m@75000,0.6pt' fill='#E65C5C+0.1white' border='#E65C5C+0.1black' borderWidth='10%'/>
+                    <macro ref='major-road-label'/>
+                    <macro ref='standard-tunnel'/>
+                </condition>
+
+
+            </layer>
+
+        </zoom>
+
+    </layerGroup>
+
+    <zoom min='14'>
+        <layer name='path' roadflags='#1F001'>
+
+            <!-- FOOTPATH -->
+            <condition exp='OsmType in { "foo","wlk","hik" }'>
+                <line width='1m,0.3pt' fill='lightgreen' dashArray='1 1'/>
+                <label font-size='75%,5pt' glow='white' glowWidth='7%,1' color='#777' case='assume-title'/>
+            </condition>
+
+            <!-- BRIDLEWAY -->
+            <condition exp='OsmType=="bri"'>
+                <line width='1.5m,0.5pt' fill='lightgreen' dashArray='2,1'/>
+                <label font-size='75%,5pt' glow='white' glowWidth='7%,1' color='#777' case='assume-title'/>
+            </condition>
+
+            <!-- SKI ROUTE -->
+            <condition exp='OsmType=="ski"'>
+                <line width='1.5m,0.5pt' fill='lightgreen' dashArray='3,2'/>
+                <label font-size='75%,5pt' glow='white' glowWidth='7%,1' color='#777' case='assume-title'/>
+            </condition>
+
+            <!-- STEPS -->
+            <condition exp='OsmType=="ste"'>
+                <line width='2m,1pt' fill='lightgreen' dashArray='0.5,0.5'/>
+                <label font-size='75%,5pt' glow='white' glowWidth='7%,1' color='#777' case='assume-title'/>
+            </condition>
+
+            <!-- CYCLEWAY -->
+            <condition exp='OsmType=="cyc" or OsmType=="cyr"'>
+                <line width='1.5m,0.5pt' fill='lightgreen' dashArray='5 3'/>
+                <label font-size='75%,5pt' font-style='italic' glow='white' glowWidth='7%,1' color='#777' case='assume-title'/>
+                <oneWayArrow path='#arrow' gap='2000' fill='lightgreen' isLabel='yes' unitsPerLineWidth='80'/>
+            </condition>
+
+        </layer>
+    </zoom>
+
+    <zoom min='10'>
+        <layer name='railway' roadflags='#1F001'>
+
+            <condition exp='OsmType in { "rly","pry" }'>
+                <line width='8m,0.6pt' fill='#FCFBE7+0.1black'/>
+            </condition>
+
+            <condition exp='OsmType in { "nar","tra","lir","swy" }'>
+                <line width='6m,0.6pt' fill='#FCFBE7+0.1black'/>
+            </condition>
+
+        </layer>
+    </zoom>
+
+    <!-- AMENITY LAYERS -->
+    <zoom min='10'>
+        <layer name='amenity/major' roadflags='#1F001'>
+            <!-- DEFAULT -->
+            <zoom min='14'>
+                <label font-size='8m,6pt,16pt' color='darkgrey+black' glow='white' glowWidth='7%,1' case='assume-title' priority='-2' wrapWidth='10em'/>
+            </zoom>
+
+            <!-- AIRPORTS -->
+            <condition exp='OsmType=="aer"'>
+                <icon ref='airport-icon'/>
+            </condition>
+
+            <!-- AIRPORT RUNWAYS AND TAXIWAYS -->
+            <condition exp='OsmType=="run"'>
+                <line width='30m' fill='#ddc'/>
+                <label maxScale='12000'/>
+            </condition>
+            <condition exp='OsmType=="twy"'>
+                <line width='10m' fill='#ddc'/>
+                <label maxScale='12000'/>
+            </condition>
+
+        </layer>
+    </zoom>
+    <zoom min='14'>
+        <layer name='amenity/minor' roadflags='#1F001'>
+            <!-- DEFAULT -->
+            <label font-size='8m,6pt,16pt' color='darkgrey+black' glow='white' glowWidth='7%,1' case='assume-title' priority='-2' wrapWidth='10em'/>
+
+            <!-- RAILWAY STATION -->
+            <zoom min='14'>
+                <condition exp='OsmType=="stn"'>
+                    <icon ref='station-icon'/>
+                    <label priority='-2' color='red+0.5orange+0.2black'/>
+                    <scale max='75000'>
+                        <shape fill='brown' opacity='0.1'/>
+                    </scale>
+                </condition>
+            </zoom>
+
+            <zoom min='16'>
+
+                <!-- THEATRE -->
+                <condition exp='OsmType=="the"'>
+                    <icon ref='theatre-icon'/>
+                </condition>
+
+                <!-- CINEMA -->
+                <condition exp='OsmType=="cin"'>
+                    <icon ref='cinema-icon'/>
+                </condition>
+
+                <!-- CAR PARKING -->
+                <condition exp='OsmType=="pkg"'>
+                    <icon ref='parking-icon'/>
+                </condition>
+
+                <!-- TOILETS -->
+                <condition exp='OsmType=="toi"'>
+                    <icon ref='toilet-icon'/>
+                </condition>
+            </zoom>
+
+            <zoom min='17'>
+                <!-- RESTAURANT -->
+                <condition exp='OsmType=="rst"'>
+                    <icon ref='restaurant-icon'/>
+                </condition>
+
+                <!-- CAFE -->
+                <condition exp='OsmType=="caf"'>
+                    <icon ref='cafe-icon'/>
+                </condition>
+
+                <!-- PUB -->
+                <condition exp='OsmType in { "pub","bar" }'>
+                    <icon ref='pub-icon'/>
+                </condition>
+
+                <!-- ATM -->
+                <condition exp='OsmType=="atm"'>
+                    <icon ref='atm-icon'/>
+                </condition>
+
+                <!-- PHARMACY -->
+                <condition exp='OsmType=="pha"'>
+                    <icon ref='pharmacy-icon'/>
+                </condition>
+
+                <!-- TRAFFIC LIGHTS -->
+                <condition exp='OsmType=="trf"'>
+                    <label priority='-3'/>
+                    <icon ref='traffic-light-icon'/>
+                </condition>
+
+            </zoom>
+
+            <zoom min='14'>
+                <!-- FUEL -->
+                <condition exp='OsmType=="fue"'>
+                    <icon ref='fuel-icon'/>
+                </condition>
+            </zoom>
+
+            <!-- MOTORWAY JUNCTION -->
+            <condition exp='OsmType=="jct"'>
+                <scale max='15000'>
+                    <label position='point' color='#E65C5C+0.1black' font-size='40m,4.5pt,8pt' labelFormat='_jr+{font-style:italic}"&#x000a;(";")"' wrapLines='0' wrapWidth='10em'/>
+                </scale>
+                <scale min='15000'>
+                    <label position='point' color='#E65C5C+0.1black' font-size='40m,4.5pt,8pt' labelFormat='_jr'/>
+                </scale>
+            </condition>
+
+            <zoom min='17'>
+                <!-- OTHER AMENITIES -->
+                <condition exp='OsmType in { "bnk","bst","bui","col","fis","gry","kin","pbu","plw","pof","pol","sch","swi","uni" }'>
+                    <condition exp='@=0'>
+                        <!-- The icon is displayed for point objects only (@=0 means 'object type = point'). -->
+                        <label color='grey' font-size='7m,4.5pt'/>
+                        <icon ref='dot-icon'/>
+                    </condition>
+                    <condition exp='@!=0'>
+                        <label color='grey' font-size='7m,4.5pt' maxPolygonLabelLength='6'/>
+                    </condition>
+                </condition>
+            </zoom>
+
+        </layer>
+    </zoom>
+
+    <layer name='graticule'>
+        <scale max='1500000'>
+            <condition exp='Type lt 3600'>
+                <line width='0.3pt' fill='#C4DFF6+0.1black'/>
+                <label color='#C4DFF6+0.1black' font-size='5pt' baseline='text-after-edge'/>
+            </condition>
+        </scale>
+        <condition exp='Type ge 3600'>
+            <line width='0.5pt' fill='#C4DFF6+0.1black'/>
+            <label color='#C4DFF6+0.1black' font-size='6pt' baseline='text-after-edge'/>
+        </condition>
+    </layer>
+
+    <!-- A layer for highlighted routes -->
+    <layer name='route' roadflags='#F000'>
+        <condition exp='(Type bitand 0xFFF) == 0'>
+            <macro color='orange' ref='route-highlight'/>
+        </condition>
+        <condition exp='(Type bitand 0xFFF) == 1'>
+            <macro color='ncsblue' ref='route-highlight'/>
+        </condition>
+        <condition exp='(Type bitand 0xFFF) gt 1'>
+            <macro color='ncsgreen' ref='route-highlight'/>
+        </condition>
+    </layer>
+
+    <!-- Waypoints on routes. -->
+    <layer name='waypoint' roadflags='#F000'>
+        <label baseline='central-caps' color='grey+orange' font-size='20m@6000_90m@40000,7pt,12pt' labelFormat='{[padding:20%,0.6pt;background-color:#FFFFFFC0;border-color:orange+grey;border-width:12%,0.7;border-radius:50%,1.2pt};{]}' position='point' priority='-21' wrapLines='0' wrapWidth='30em'/>
+    </layer>
+
+    <!-- The vehicle position when routing -->
+    <layer name='route-position' roadflags='#F000'>
+        <macro color='ncsred' ref='route-circle'/>
+        <label priority='-10'/>
+    </layer>
+    
+    <!-- The vehicle heading when routing -->
+    <layer name='route-vector' roadflags='#F000'>
+        <line width='40m,12pt,42pt'/>
+        <label priority='-9'/>
+        <repeatedSymbol fill='blue' gap='0' isLabel='yes' maxScale='1500000' path='#arrow'/>
+    </layer>
+
+    <!-- The start of the route -->
+    <layer name='route-start' roadflags='#F000'>
+        <macro color='orange' ref='route-circle'/>
+        <label priority='-9'/>
+    </layer>
+
+    <!-- The end of the route -->
+    <layer name='route-end' roadflags='#F000'>
+        <macro color='orange' ref='route-circle'/>
+        <label priority='-9'/>
+    </layer>
+
+    <!-- A layer for found objects -->
+    <layer name='found'>
+        <shape border='ncsred+0.5white' borderWidth='2m,0.6pt' fill='#FFFF0080'/>
+        <line border='ncsred+0.5white' borderWidth='2m,0.6pt' fill='#FFFF0080' width='30m,2pt'/>
+    </layer>
+
+    <!-- Pushpins -->
+    <zoom min='12'>
+        <layer name='pushpin'>
+            <condition exp='@=0'>
+                <!-- The icon is displayed for point objects only (@=0 means 'object type = point'). -->
+                <icon width='20m,12pt,96pt' canOverlap='true' hotSpotY='100%'>
+                    <svg width='30' height='80'>
+                        <defs>
+                            <linearGradient id="g0" x1="10" y1="0" x2="17" y2="0">
+                                <stop offset="0%" stop-color="black"/>
+                                <stop offset="40%" stop-color="white+0.2black"/>
+                                <stop offset="100%" stop-color="black" />
+                            </linearGradient>
+                            <radialGradient id="g1" cx="40%" cy="40%" r="90%" fx="50%" fy="50%">
+                                <stop offset="0%" stop-color="white"/>
+                                <stop offset="100%" stop-color="teal" />
+                            </radialGradient>
+                        </defs>
+                        <path stroke='url(#g0)' stroke-width='4' d='M 15 30 v 48'/>
+                        <circle fill='url(#g1)' cx ='15' cy='15' r='15'/>
+                    </svg>
+                </icon>
+                <label font-size='12m,6pt' color='teal' glow='white' glowWidth='7%,1' case='assume-title' wrapWidth='5em' priority='-20'/>
+                <shape border='blue' fill='teal' opacity='0.5' borderWidth='2m,0.6pt'/>
+                <line width='5m,0.6pt' fill='teal' opacity='0.5'/>
+            </condition>
+            <condition exp='@!=0'>
+                <label font-size='12m,6pt' color='teal' glow='white' glowWidth='7%,1' case='assume-title' wrapWidth='5em' priority='-20'/>
+                <shape border='blue' fill='teal' opacity='0.5' borderWidth='2m,0.6pt'/>
+                <line width='5m,0.6pt' fill='teal' opacity='0.5'/>
+            </condition>
+        </layer>
+    </zoom>
+
+    <layer name='gpx'>
+        <line width='2m,1pt' fill='ncsred'/>
+        <label color='ncsred' font-size='6pt' baseline='text-after-edge' case='title'/>
+    </layer>
+
+    <stratum/>
+
+    <layer name='range'>
+        <shape fill='ncsyellow' opacity='0.3'/>
+    </layer>
+
+    <!--
+    Traffic information: speeds and prohibited roads and areas.
+    The speed in kph is in bits 0...7; 0 means prohibited.
+    Bit 8 is on if the left side of a line is to be highlighted.
+    Bit 9 is on if the right side of a line is to be highlighted.
+    -->
+    <layer name='traffic'>
+        <macro ref='traffic-highlight' maxspeed='10' color='red'/>
+        <macro ref='traffic-highlight' maxspeed='30' color='orange'/>
+        <macro ref='traffic-highlight' maxspeed='255' color='green'/>
+    </layer>
+
+    <labelLayer/>
+
+</CartoTypeStyleSheet>
