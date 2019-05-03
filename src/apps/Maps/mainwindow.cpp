@@ -67,8 +67,33 @@ MainWindow::MainWindow(QWidget *parent) :
             }
         }
 
-    // Load the first file from the recent file list, or if there aren't any, show a welcome message.
+    // If the main window geometry, and the geometry and states of the child windows, have been saved, restore those settings.
     QSettings settings;
+    if (!map_loaded)
+        {
+        settings.beginGroup("mainWindow");
+        QByteArray main_window_geometry = settings.value("geometry").toByteArray();
+        settings.endGroup();
+        if (main_window_geometry.isEmpty())
+            setWindowState(Qt::WindowMaximized);
+        else
+            restoreGeometry(main_window_geometry);
+
+        // Open the saved map windows.
+        int saved_map_window_count = settings.beginReadArray("mapWindows");
+        for (int index = 0; index < saved_map_window_count; index++)
+            {
+            settings.setArrayIndex(index);
+            QByteArray geometry = settings.value("geometry").toByteArray();
+            QString filename = settings.value("fileName").toString();
+            QString view_state = settings.value("viewState").toString();
+            LoadMap(filename,&geometry,&view_state);
+            map_loaded = true;
+            }
+        settings.endArray();
+        }
+
+    // Load the first file from the recent file list, or if there aren't any, show a welcome message.
     QStringList files = settings.value("recentFileList").toStringList();
     if (!map_loaded)
         {
@@ -107,7 +132,8 @@ MainWindow::~MainWindow()
 void MainWindow::closeEvent(QCloseEvent* aEvent)
     {
     bool dirty = false;
-    QList<QMdiSubWindow*> sub_window_list = m_ui->mdiArea->subWindowList();
+    bool accept = false;
+    QList<QMdiSubWindow*> sub_window_list = m_ui->mdiArea->subWindowList(QMdiArea::StackingOrder);
     for (auto p : sub_window_list)
         {
         MapChildWindow* w = dynamic_cast<MapChildWindow*>(p);
@@ -124,12 +150,40 @@ void MainWindow::closeEvent(QCloseEvent* aEvent)
                                 QMessageBox::Yes | QMessageBox::Cancel);
         QMessageBox::StandardButton button = (QMessageBox::StandardButton)message_box.exec();
         if (button == QMessageBox::Yes)
-            aEvent->accept();
-        else
-            aEvent->ignore();
+            accept = true;
         }
     else
+        accept = true;
+
+    if (accept)
+        {
+        // Write the geometry of the main window.
+        QSettings settings;
+        settings.beginGroup("mainWindow");
+        settings.setValue("geometry",saveGeometry());
+        settings.endGroup();
+
+        // Write the view states of all the map windows.
+        settings.beginWriteArray("mapWindows");
+        int index = 0;
+        for (auto p : sub_window_list)
+            {
+            MapChildWindow* w = dynamic_cast<MapChildWindow*>(p);
+            if (w->m_map_form)
+                {
+                settings.setArrayIndex(index);
+                settings.setValue("geometry",w->saveGeometry());
+                settings.setValue("fileName",w->m_map_form->FileName());
+                settings.setValue("viewState",w->m_map_form->ViewState());
+                index++;
+                }
+            }
+        settings.endArray();
+
         aEvent->accept();
+        }
+    else
+        aEvent->ignore();
     }
 
 void MainWindow::OpenRecentFileTriggered()
@@ -147,8 +201,27 @@ void MainWindow::on_actionOpen_triggered()
         LoadMap(map_filename);
     }
 
-void MainWindow::LoadMap(const QString& aPath)
+void MainWindow::LoadMap(const QString& aPath,const QByteArray* aWindowGeometry,const QString* aViewState)
     {
+    auto SetWindowState = [aWindowGeometry,aViewState](MapChildWindow* aWindow)
+        {
+        if (aWindowGeometry)
+            aWindow->restoreGeometry(*aWindowGeometry);
+        if (aViewState)
+            {
+            CartoType::TViewState v;
+            v.ReadFromXml(aViewState->toStdString().c_str());
+            aWindow->SetView(v);
+            }
+
+        // The following code fixes a bug on Qt on Linux causing maximized windows to be restored in the wrong place.
+        if (aWindow->isMaximized())
+            {
+            aWindow->showNormal();
+            aWindow->showMaximized();
+            }
+        };
+
     // If this map has already been loaded, just bring it to the front.
     QList<QMdiSubWindow*> sub_window_list = m_ui->mdiArea->subWindowList();
     for (auto p : sub_window_list)
@@ -158,6 +231,7 @@ void MainWindow::LoadMap(const QString& aPath)
             {
             w->raise();
             w->showMaximized();
+            SetWindowState(w);
             return;
             }
         }
@@ -169,6 +243,7 @@ void MainWindow::LoadMap(const QString& aPath)
     else
         {
         w->showMaximized();
+        SetWindowState(w);
 
         QSettings settings;
         QStringList files = settings.value("recentFileList").toStringList();
@@ -437,17 +512,26 @@ void MainWindow::on_actionNorth_Up_triggered()
 
 void MainWindow::UpdateSaveAddedData()
     {
-    m_ui->actionSave_Added_Data_as_CTMS->setEnabled(m_map_form->HasWritableData());
+    if (m_map_form)
+        m_ui->actionSave_Added_Data_as_CTMS->setEnabled(m_map_form->HasWritableData());
     }
 
 void MainWindow::UpdateFindNext()
     {
-    m_ui->actionFind_Next->setEnabled(m_map_form->FoundItemCount() > 1);
+    if (m_map_form)
+        m_ui->actionFind_Next->setEnabled(m_map_form->FoundItemCount() > 1);
     }
 
 void MainWindow::UpdateNorthUp()
     {
-    m_ui->actionNorth_Up->setDisabled(m_map_form->Rotation() == 0);
+    if (m_map_form)
+        m_ui->actionNorth_Up->setDisabled(m_map_form->Rotation() == 0);
+    }
+
+void MainWindow::UpdatePerspective()
+    {
+    if (m_map_form)
+        m_ui->actionPerspective_View->setChecked(m_map_form->Perspective());
     }
 
 void MainWindow::on_actionDelete_Route_triggered()
@@ -481,26 +565,33 @@ void MainWindow::UpdateDeletePushpins()
 
 void MainWindow::UpdateRouteProfile()
     {
-    TExtendedRouteProfileType p = m_map_form->RouteProfileType();
-    m_ui->actionDrive->setChecked(p == TExtendedRouteProfileType::Drive);
-    m_ui->actionCycle->setChecked(p == TExtendedRouteProfileType::Cycle);
-    m_ui->actionWalk->setChecked(p == TExtendedRouteProfileType::Walk);
-    m_ui->actionHike->setChecked(p == TExtendedRouteProfileType::Hike);
-    m_ui->actionCustom_Profile->setChecked(p == TExtendedRouteProfileType::Custom);
+    if (m_map_form)
+        {
+        TExtendedRouteProfileType p = m_map_form->RouteProfileType();
+        m_ui->actionDrive->setChecked(p == TExtendedRouteProfileType::Drive);
+        m_ui->actionCycle->setChecked(p == TExtendedRouteProfileType::Cycle);
+        m_ui->actionWalk->setChecked(p == TExtendedRouteProfileType::Walk);
+        m_ui->actionHike->setChecked(p == TExtendedRouteProfileType::Hike);
+        m_ui->actionCustom_Profile->setChecked(p == TExtendedRouteProfileType::Custom);
+        }
     }
 
 void MainWindow::UpdateGoToGridRef()
     {
-    m_ui->actionGo_to_Ordnance_Survey_grid_reference->setEnabled(m_map_form->MapIncludesGreatBritain());
+    if (m_map_form)
+        m_ui->actionGo_to_Ordnance_Survey_grid_reference->setEnabled(m_map_form->MapIncludesGreatBritain());
     }
 
 void MainWindow::UpdateStyleSheet()
     {
-    bool custom = m_map_form->UsingCustomStyleSheet();
-    m_ui->actionUse_Custom_Style_Sheet->setChecked(custom);
-    m_ui->actionChoose_Style_Sheet->setEnabled(!custom);
-    m_ui->actionReload_Style_Sheet->setEnabled(!custom);
-    m_ui->actionEdit_Custom_Style_Sheet->setEnabled(!m_style_dialog);
+    if (m_map_form)
+        {
+        bool custom = m_map_form->UsingCustomStyleSheet();
+        m_ui->actionUse_Custom_Style_Sheet->setChecked(custom);
+        m_ui->actionChoose_Style_Sheet->setEnabled(!custom);
+        m_ui->actionReload_Style_Sheet->setEnabled(!custom);
+        m_ui->actionEdit_Custom_Style_Sheet->setEnabled(!m_style_dialog);
+        }
     }
 
 void MainWindow::on_actionDrive_triggered()

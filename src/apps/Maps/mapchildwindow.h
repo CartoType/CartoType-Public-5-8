@@ -12,6 +12,7 @@ class MapChildWindow : public QMdiSubWindow
     public:
     explicit MapChildWindow(QWidget* aParent,MainWindow& aMainWindow,const QString& aMapFileName);
     ~MapChildWindow();
+    void SetView(const CartoType::TViewState& aViewState);
 
     MapForm* m_map_form;
     };

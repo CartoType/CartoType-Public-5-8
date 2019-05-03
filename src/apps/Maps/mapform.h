@@ -32,6 +32,8 @@ class MapForm: public QOpenGLWidget
     ~MapForm();
 
     const QString& FileName() const { return m_filename; }
+    QString ViewState() const;
+    void SetView(const CartoType::TViewState& aViewState);
     bool Valid() const { return m_framework != nullptr; }
     void Print(bool aPreview);
     void EnableDrawLegend(bool aEnable);

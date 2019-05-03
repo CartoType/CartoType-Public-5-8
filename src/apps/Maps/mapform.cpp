@@ -110,6 +110,25 @@ MapForm::~MapForm()
     delete m_ui;
     }
 
+QString MapForm::ViewState() const
+    {
+    CartoType::TViewState v { m_framework->ViewState() };
+    return QString::fromStdString(v.ToXml());
+    }
+
+void MapForm::SetView(const CartoType::TViewState& aViewState)
+    {
+    m_framework->SetView(aViewState);
+    m_ui->dial->setValue(int(m_framework->Rotation() * 100));
+    m_main_window.UpdateNorthUp();
+    m_ui->perspective_slider->setValue((int)m_framework->PerspectiveParam().iDeclinationDegrees);
+    if (m_framework->Perspective())
+        m_ui->perspective_slider->show();
+    else
+        m_ui->perspective_slider->hide();
+    m_main_window.UpdatePerspective();
+    }
+
 void MapForm::resizeEvent(QResizeEvent* aEvent)
     {
     QOpenGLWidget::resizeEvent(aEvent);
@@ -124,7 +143,7 @@ void MapForm::resizeEvent(QResizeEvent* aEvent)
     static bool first = true;
     if (first)
         {
-        m_framework->SetViewToWholeMap();
+        // m_framework->SetViewToWholeMap();
         first = false;
         }
     }
@@ -138,7 +157,6 @@ void MapForm::paintEvent(QPaintEvent* aEvent)
         }
 
     CartoType::TResult error = 0;
-    QRect rect(geometry());
     bool redraw_needed = false;
     const CartoType::TBitmap* map_bitmap = MapBitmap(error,redraw_needed);
     if (map_bitmap && !error)

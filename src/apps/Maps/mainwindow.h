@@ -25,6 +25,7 @@ class MainWindow: public QMainWindow
     void UpdateSaveAddedData();
     void UpdateFindNext();
     void UpdateNorthUp();
+    void UpdatePerspective();
     void UpdateDeleteOrSaveRoute();
     void UpdateDeletePushpins();
     void UpdateRouteProfile();
@@ -112,7 +113,7 @@ class MainWindow: public QMainWindow
     void GetFontPath(CartoType::CString& aPath,const char* aFontName);
     CartoType::TResult LoadFont(const char* aFontName);
     CartoType::TResult InitCartoType();
-    void LoadMap(const QString& aPath);
+    void LoadMap(const QString& aPath,const QByteArray* aWindowGeometry = nullptr,const QString* aViewState = nullptr);
     void UpdateRecentFiles(bool aRemoveNonExistentFiles = false);
     void UpdateCustomRouteProfile();
 
