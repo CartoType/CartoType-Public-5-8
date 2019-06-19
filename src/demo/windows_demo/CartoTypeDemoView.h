@@ -235,7 +235,7 @@ private:
     class TRoutePoint 
         {
         public:
-        CartoType::TPointFP iPoint;
+        CartoType::TRoutePoint iPoint;
         uint64_t iId = 0;
         };
 

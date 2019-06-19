@@ -116,6 +116,8 @@
 #define IDC_BEST_ROUTE                  1076
 #define IDC_ABOUT_TEXT_LINE_1           1077
 #define IDC_ABOUT_TEXT_LINE_2           1078
+#define IDC_EDIT1                       1079
+#define IDC_HEADING                     1079
 #define ID_VIEW_ZOOM_IN                 32771
 #define ID_VIEW_ZOOM_OUT                32772
 #define ID_VIEW_PAN_LEFT                32773
@@ -193,9 +195,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        311
+#define _APS_NEXT_RESOURCE_VALUE        312
 #define _APS_NEXT_COMMAND_VALUE         32846
-#define _APS_NEXT_CONTROL_VALUE         1079
+#define _APS_NEXT_CONTROL_VALUE         1080
 #define _APS_NEXT_SYMED_VALUE           310
 #endif
 #endif

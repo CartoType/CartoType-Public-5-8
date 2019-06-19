@@ -1,6 +1,6 @@
 /*
-CARTOTYPE_PATH.H
-Copyright (C) 2013-2018 CartoType Ltd.
+cartotype_path.h
+Copyright (C) 2013-2019 CartoType Ltd.
 See www.cartotype.com for more information.
 */
 
@@ -21,6 +21,7 @@ class CMapObject;
 class CMarker;
 class TCircularPen;
 class CProjection;
+class TClipRegion;
 
 enum class TClipType
     {
@@ -84,7 +85,8 @@ class MPath
     COutline Copy() const;
     COutline ClippedPath(const TRect& aClip) const;
     COutline ClippedPath(const MPath& aClip) const;
-    COutline Clip(TClipOperation aClipOperation,const MPath* aPathArray,size_t aPathCount) const;
+    COutline ClippedPath(const TClipRegion& aClip) const;
+    COutline Clip(TClipOperation aClipOperation,const MPath& aClip) const;
     COutline Envelope(double aOffset) const;
     bool IsSmoothingNeeded() const;
     COutline SmoothPath() const;
@@ -101,7 +103,7 @@ class MPath
     TResult Write(TDataOutputStream& aOutput) const;
     bool IsEmpty() const;
     bool IsPoint() const;
-    bool IsGridOrientedRectangle() const;
+    bool IsGridOrientedRectangle(TRect* aRect = nullptr) const;
 
     TClipType ClipType(const TRect& aRect) const;
 
@@ -232,7 +234,7 @@ class TContour: public MPath
     size_t Points() const { return iPoints; }
     /** Return true if the contour is closed. */
     bool Closed() const { return iClosed; }
-    bool IsGridOrientedRectangle() const;
+    bool IsGridOrientedRectangle(TRect* aRect = nullptr) const;
 
     /** Set whether the contour may have curves. */
     void SetMayHaveCurves(bool aValue) { iMayHaveCurves = aValue; }
@@ -750,6 +752,28 @@ class CPolygonFP
     TRectFP Bounds() const;
 
     std::vector<CContourFP> iContour;
+    };
+
+/**
+A clip region.
+This class enables optimisations: detemining whether the clip region is
+an axis-aligned rectangle, and getting the bounding box.
+*/
+class TClipRegion
+    {
+    public:
+    TClipRegion() = default;
+    TClipRegion(const TRect& aRect);
+    TClipRegion(const MPath& aPath);
+    const TRect& Bounds() const noexcept { return m_bounds; }
+    const COutline& Path() const noexcept { return m_path; }
+    bool IsRect() const noexcept { return m_is_rect; }
+    bool IsEmpty() const noexcept { return m_bounds.IsEmpty(); }
+
+    private:
+    TRect m_bounds;             // the bounds of the clip region as an axis-aligned rectangle
+    COutline m_path;            // the clip path path; empty if m_is_rect is true
+    bool m_is_rect = true;     // true if the clip region is an axis-aligned rectangle
     };
 
 }

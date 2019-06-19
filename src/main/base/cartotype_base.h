@@ -13,6 +13,7 @@ See www.cartotype.com for more information.
 #include <vector>
 #include <cmath>
 #include <functional>
+#include <array>
 
 namespace CartoType
 {
@@ -645,6 +646,7 @@ class TRectFP
         }
     bool Intersects(const TPointFP& aStart,const TPointFP& aEnd,
                     TPointFP* aIntersectionStart = nullptr,TPointFP* aIntersectionEnd = nullptr) const noexcept;
+    TRect Rounded() const noexcept;
 
     /** The top left corner. */
     TPointFP iTopLeft;
@@ -780,13 +782,48 @@ enum class TPolygonClipType
     Border
     };
 
-/** Positions for notices like the legend or scale bar. */
+/** Positions for notices like the legend or scale bar. Use TExtendedNoticePosition for greater control. */
 enum class TNoticePosition
     {
     TopLeft,
     TopRight,
     BottomLeft,
-    BottomRight
+    BottomRight,
+    Top,
+    Right,
+    Left,
+    Bottom,
+    Center
+    };
+
+/**
+Positions for notices like the legend or scale bar.
+
+Notices are positioned by moving them inwards from the designated position
+by the specified insets. For central positions (e.g., the X inset in Top,
+or both insets in Center) X insets move the position right and Y insets move it down.
+Units may be 'cm', 'mm', 'in', 'pt' (points: 1/72in), or 'pc' (picas: 1/6in);
+anything else, including null, means pixels.
+
+The default inset is 3mm, or zero for central positions.
+*/
+class TExtendedNoticePosition
+    {
+    public:
+    TExtendedNoticePosition(TNoticePosition aBasePosition);
+    TExtendedNoticePosition(TNoticePosition aBasePosition,double aXInset,const char* aXInsetUnit,double aYInset,const char* aYInsetUnit);
+    TNoticePosition BasePosition() const { return m_base_position; }
+    double XInset() const { return m_x_inset; }
+    const char* XInsetUnit() const { return m_x_inset_unit.data(); }
+    double YInset() const { return m_y_inset; }
+    const char* YInsetUnit() const { return m_y_inset_unit.data(); }
+
+    private:
+    TNoticePosition m_base_position = TNoticePosition::TopLeft;
+    double m_x_inset = 0;
+    std::array<char,3> m_x_inset_unit = { };
+    double m_y_inset = 0;
+    std::array<char,3> m_y_inset_unit = { };
     };
 
 /** A holder for arbitrary data. */

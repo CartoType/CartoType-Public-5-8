@@ -136,15 +136,15 @@ Together with a CFrameworkEngine object it makes up the 'model' part of the mode
 class CFrameworkMapDataSet
     {
     public:
-    static std::unique_ptr<CFrameworkMapDataSet> New(TResult& aError,CFrameworkEngine& aEngine,const CString& aMapFileName,const std::string* aEncryptionKey = nullptr);
+    static std::unique_ptr<CFrameworkMapDataSet> New(TResult& aError,CFrameworkEngine& aEngine,const CString& aMapFileName,const std::string* aEncryptionKey = nullptr,bool aMapOverlaps = true);
     static std::unique_ptr<CFrameworkMapDataSet> New(TResult& aError,CFrameworkEngine& aEngine,std::unique_ptr<CMapDataBase> aDb);
     static std::unique_ptr<CFrameworkMapDataSet> New(TResult& aError,CFrameworkEngine& aEngine,const TTileParam& aTileParam);
 
     ~CFrameworkMapDataSet();
 
-    std::unique_ptr<CFrameworkMapDataSet> Copy(TResult& aError,CFrameworkEngine& aEngine,bool aFull = true) const;
-    TResult LoadMapData(CFrameworkEngine& aEngine,const CString& aMapFileName,const std::string* aEncryptionKey = nullptr);
-    TResult LoadMapData(CFrameworkEngine& aEngine,const TTileParam& aTileParam);
+    std::unique_ptr<CFrameworkMapDataSet> Copy(TResult& aError,bool aFull = true) const;
+    TResult LoadMapData(CFrameworkEngine& aEngine,const CString& aMapFileName,const std::string* aEncryptionKey,bool aMapOverlaps);
+    TResult LoadMapData(CFrameworkEngine& aEngine,const TTileParam& aTileParam,bool aMapOverlaps);
     TResult LoadMapData(std::unique_ptr<CMapDataBase> aDb);
     TResult UnloadMapByHandle(uint32_t aHandle);
     uint32_t GetLastMapHandle() const;
@@ -185,6 +185,7 @@ class CFrameworkMapDataSet
     CFrameworkMapDataSet& operator=(const CFrameworkMapDataSet&&) = delete;
     
     CMapDataBase* GetMapDb(uint32_t aHandle);
+    void RecalculateOverlapPaths();
 
     std::shared_ptr<CMapDataBaseArray> iMapDataBaseArray;
     std::unique_ptr<CTileDataAccessor> iTileDataAccessor;
@@ -374,6 +375,11 @@ class CFramework: public MNavigatorObserver
         std::shared_ptr<CFrameworkMapDataSet> iSharedMapDataSet;
         /** If non-null, use these tile parameters and do not use iMapFileName. */
         std::shared_ptr<TTileParam> iTileParam;
+        /**
+        If true, maps are allowed to overlap.
+        If false, maps are clipped so that they do not overlap maps previously loaded.
+        */
+        bool iMapsOverlap = true;
         };
     static std::unique_ptr<CFramework> New(TResult& aError,const TParam& aParam);
 
@@ -394,12 +400,12 @@ class CFramework: public MNavigatorObserver
     CString Copyright() const;
     void SetCopyrightNotice();
     void SetCopyrightNotice(const CString& aCopyright);
-    void SetLegend(std::unique_ptr<CLegend> aLegend,double aWidth,const char* aUnit,TNoticePosition aPosition);
-    void SetLegend(const CLegend& aLegend,double aWidth,const char* aUnit,TNoticePosition aPosition);
+    void SetLegend(std::unique_ptr<CLegend> aLegend,double aWidth,const char* aUnit,const TExtendedNoticePosition& aPosition);
+    void SetLegend(const CLegend& aLegend,double aWidth,const char* aUnit,const TExtendedNoticePosition& aPosition);
     void EnableLegend(bool aEnable);
-    void SetScaleBar(bool aMetricUnits,double aWidth,const char* aUnit,TNoticePosition aPosition);
+    void SetScaleBar(bool aMetricUnits,double aWidth,const char* aUnit,const TExtendedNoticePosition& aPosition);
     void EnableScaleBar(bool aEnable);
-    void SetTurnInstructions(bool aMetricUnits,bool aAbbreviate,double aWidth,const char* aUnit,TNoticePosition aPosition,double aTextSize = 7,const char* aTextSizeUnit = "pt");
+    void SetTurnInstructions(bool aMetricUnits,bool aAbbreviate,double aWidth,const char* aUnit,const TExtendedNoticePosition& aPosition,double aTextSize = 7,const char* aTextSizeUnit = "pt");
     void EnableTurnInstructions(bool aEnable);
     void SetTurnInstructionText(const CString& aText);
     CString TurnInstructionText();
@@ -409,6 +415,7 @@ class CFramework: public MNavigatorObserver
     TResult Configure(const CString& aFilename);
     TResult LoadMap(const CString& aMapFileName,const std::string* aEncryptionKey = nullptr);
     TResult LoadMap(const TTileParam& aTileParam);
+    bool SetMapsOverlap(bool aEnable);
     TResult CreateWritableMap(TWritableMapType aType,CString aFileName = nullptr);
     TResult SaveMap(uint32_t aHandle,const CString& aFileName,TFileType aFileType);
     TResult ReadMap(uint32_t aHandle,const CString& aFileName,TFileType aFileType);
@@ -625,6 +632,7 @@ class CFramework: public MNavigatorObserver
     TRouterType ActualRouterType() const;
     TResult StartNavigation(double aStartX,double aStartY,TCoordType aStartCoordType,
                             double aEndX,double aEndY,TCoordType aEndCoordType);
+    TResult StartNavigation(const TRouteCoordSet& aCoordSet);
     TResult StartNavigation(const TCoordSet& aCoordSet,TCoordType aCoordType);
     void EndNavigation();
     bool EnableNavigation(bool aEnable);
@@ -632,6 +640,9 @@ class CFramework: public MNavigatorObserver
     TResult LoadNavigationData();
     bool NavigationDataHasGradients() const;
     void SetMainProfile(const TRouteProfile& aProfile);
+    size_t BuiltInProfileCount();
+    const TRouteProfile* BuiltInProfile(size_t aIndex);
+    TResult SetBuiltInProfile(size_t aIndex);
     void AddProfile(const TRouteProfile& aProfile);
     TResult ChooseRoute(size_t aRouteIndex);
     const TRouteProfile* Profile(size_t aIndex) const;
@@ -643,8 +654,10 @@ class CFramework: public MNavigatorObserver
     TResult DisplayRoute(bool aEnable = true);
     const CRoute* Route() const; 
     const CRoute* Route(size_t aIndex) const;
+    std::unique_ptr<CRoute> CreateRoute(TResult& aError,const TRouteProfile& aProfile,const TRouteCoordSet& aCoordSet);
     std::unique_ptr<CRoute> CreateRoute(TResult& aError,const TRouteProfile& aProfile,const TCoordSet& aCoordSet,TCoordType aCoordType);
-    std::unique_ptr<CRoute> CreateBestRoute(TResult& aError,const TRouteProfile& aProfile,const TCoordSet& aCoordSet,TCoordType aCoordType,bool aStartFixed,bool aEndFixed,size_t aIterations = 10);
+    std::unique_ptr<CRoute> CreateBestRoute(TResult& aError,const TRouteProfile& aProfile,const TRouteCoordSet& aCoordSet,bool aStartFixed,bool aEndFixed,size_t aIterations);
+    std::unique_ptr<CRoute> CreateBestRoute(TResult& aError,const TRouteProfile& aProfile,const TCoordSet& aCoordSet,TCoordType aCoordType,bool aStartFixed,bool aEndFixed,size_t aIterations);
     std::unique_ptr<CRoute> CreateRouteFromXml(TResult& aError,const TRouteProfile& aProfile,const CString& aFileNameOrData);
     CString RouteInstructions(const CRoute& aRoute) const;
     TResult UseRoute(const CRoute& aRoute,bool aReplace);
@@ -741,8 +754,9 @@ class CFramework: public MNavigatorObserver
     void HandleChangedLayer() { InvalidateMapBitmaps(); LayerChanged(); }
     TResult CreateTileServer(int32_t aTileWidthInPixels,int32_t aTileHeightInPixels);
     TResult SetRoutePositionAndVector(const TPoint& aPos,const TPoint& aVector);
+    TResult ConvertCoordSetToMapCoords(TRouteCoordSet& aRouteCoordSet);
     TResult CreateNavigator();
-    std::unique_ptr<CRoute> CreateRouteHelper(TResult& aError,bool aBest,const TRouteProfile& aProfile,const TCoordSet& aCoordSet,TCoordType aCoordType,bool aStartFixed,bool aEndFixed,size_t aIterations);
+    std::unique_ptr<CRoute> CreateRouteHelper(TResult& aError,bool aBest,const TRouteProfile& aProfile,const TRouteCoordSet& aCoordSet,bool aStartFixed,bool aEndFixed,size_t aIterations);
     void SetCameraParam(TCameraParam& aCameraParam,double aViewWidth,double aViewHeight);
 
     // Notifying the framework observer.
@@ -798,7 +812,6 @@ class CFramework: public MNavigatorObserver
     TNavigationState iNavigationState = TNavigationState::None;
     TNavigatorParam iNavigatorParam;
     std::vector<TRouteProfile> iRouteProfile;
-    bool iPositionKnown = false;
     TPointFP iVehiclePosOffset;
     std::unique_ptr<CTileServer> iTileServer;
     int32_t iTileServerOverSizeZoomLevels = 1;
@@ -809,6 +822,7 @@ class CFramework: public MNavigatorObserver
     std::string iLocale;
     TFollowMode iFollowMode = TFollowMode::LocationHeadingZoom;
     std::shared_ptr<MUserData> iUserData;
+    bool iMapsOverlap = true;
     };
 
 /** A framework for finding map objects in a map, when the ability to draw the map is not needed. */

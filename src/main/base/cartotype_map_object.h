@@ -1,6 +1,6 @@
 /*
-CARTOTYPE_MAP_OBJECT.H
-Copyright (C) 2013-2018 CartoType Ltd.
+cartotype_map_object.h
+Copyright (C) 2013-2019 CartoType Ltd.
 See www.cartotype.com for more information.
 */
 
@@ -148,7 +148,9 @@ class CMapObject: public MPath
     void Project(const CProjection& aProjection);
     void Smooth();
     void Offset(int32_t aDx,int32_t aDy);
-    CMapObject* Clip(const TRect& aClip) const;
+    bool Clip(const TRect& aClip,std::unique_ptr<CMapObject>& aClippedObject,CMapObjectArray* aExtraClippedObjectArray = nullptr,bool aLinesMustBeSingleContours = false) const;
+    bool Clip(const TClipRegion& aClip,std::unique_ptr<CMapObject>& aClippedObject,CMapObjectArray* aExtraClippedObjectArray = nullptr,bool aLinesMustBeSingleContours = false) const;
+
     std::unique_ptr<CMapObject> Flatten(double aDistance) const;
     void SetType(TMapObjectType aType) { iType = aType; }
     TResult Write(TDataOutputStream& aOutput,const CProjection* aProjectionFromLatLong = nullptr) const;
@@ -206,6 +208,9 @@ class CMapObject: public MPath
     void SetUserDataToUnion(TUserData aUserData) { iUserData = aUserData; }
     /** Return the user data as a union. */
     TUserData UserDataAsUnion() const { return iUserData; }
+
+    private:
+    bool ClipHelper(COutline& aClippedOutline,std::unique_ptr<CMapObject>& aClippedObject,CMapObjectArray* aExtraClippedObjectArray,bool aLinesMustBeSingleContours) const;
         
     protected:
     CMapObject(CRefCountedString aLayer,TMapObjectType aType):

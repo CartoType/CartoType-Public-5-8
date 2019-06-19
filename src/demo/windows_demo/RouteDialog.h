@@ -13,6 +13,7 @@ class CRouteDialog : public CDialog
     CString	iAddress;
     CString iPushPinName;
     CString iPushPinDesc;
+    CString iHeading;
     int		iButtonIndex;
     int     iUseAsWayPoint;
     int     iBestRoute;
@@ -34,7 +35,7 @@ class CRouteDialog : public CDialog
         DECLARE_MESSAGE_MAP()
 
     private:
-        void ShowOrHidePushPinFields();
+        void ShowOrHideFields();
 
         bool iPushPinSelected;
     };

@@ -39,6 +39,7 @@ class CLegend: public MNavigatorObserver
     
     std::unique_ptr<CBitmap> CreateLegend(double aWidth,const char* aUnit,double aScaleDenominator,double aScaleDenominatorInView);
     void Clear();
+    int32_t Pixels(double aDimension,const char* aUnit);
 
     void AddMapObjectLine(TMapObjectType aType,const CString& aLayer,const char* aOsmType,int32_t aIntAttrib,const CString& aStringAttrib,const CString& aLabel);
     void AddTextLine(const CString& aText);
@@ -63,7 +64,6 @@ class CLegend: public MNavigatorObserver
     CString TurnInstruction();
 
     private:
-    int32_t Pixels(double aDimension,const char* aUnit);
     void DrawScale(CGraphicsContext& aGc,const CLegendObjectParam& aParam,int32_t aX,int32_t aY,int32_t aWidth);
     void Copy(const CLegend& aOther);
 

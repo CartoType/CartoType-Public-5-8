@@ -884,6 +884,44 @@ class TLocationMatchParam
     double iMaxRoadDistanceInMeters = 100;
     };
 
+/** A point on a route, with its heading and location match parameters. */
+class TRoutePoint
+    {
+    public:
+    /** The point. */
+    TPointFP iPoint;
+    /** The heading in degrees clockwise from north. */
+    double iHeading = 0;
+    /** True if the heading is known. */
+    bool iHeadingKnown = false;
+    /** Parameters used when matching the point to a road or other routable segment. */
+    TLocationMatchParam iLocationMatchParam;
+    };
+
+/**
+A set of points for creating a route, with optional heading and accuracy information.
+Headings are used where available, and where possible, to decide between
+roads or choose the direction of travel on a road.
+*/
+class TRouteCoordSet
+    {
+    public:
+    TRouteCoordSet() { }
+    explicit TRouteCoordSet(TCoordType aCoordType): iCoordType(aCoordType) {  }
+    TRouteCoordSet(const TRouteCoordSet& aOther) = default;
+    TRouteCoordSet(TRouteCoordSet&& aOther) = default;
+    TRouteCoordSet(const TCoordSet& aCs,TCoordType aCoordType);
+    TRouteCoordSet(const std::vector<TPointFP>& aPointArray,TCoordType aCoordType);
+    TRouteCoordSet(const TPointFP* aPointArray,size_t aCount,TCoordType aCoordType);
+    TRouteCoordSet& operator=(const TRouteCoordSet& aOther) = default;
+    TRouteCoordSet& operator=(TRouteCoordSet&& aOther) = default;
+
+    /** The coordinate type of the route points. */
+    TCoordType iCoordType = TCoordType::Degree;
+    /** The route points. */
+    std::vector<TRoutePoint> iRoutePointArray;
+    };
+
 /** An iterator allowing a route to be traversed. */
 class TRouteIterator
     {

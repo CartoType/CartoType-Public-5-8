@@ -426,27 +426,30 @@ void CCartoTypeDemoView::OnDraw(CDC* pDC)
 
 void CCartoTypeDemoView::CalculateAndDisplayRoute()
     {
-    CartoType::TCoordSet cs;
-    cs.iX = &iRoutePointArray[0].iPoint.iX;
-    cs.iY = &iRoutePointArray[0].iPoint.iY;
-    cs.iCount = int32_t(iRoutePointArray.size());
-    cs.iStep = int32_t(&iRoutePointArray[1].iPoint.iX - cs.iX);
+    CartoType::TRouteCoordSet cs(CartoType::TCoordType::Map);
+
+    for (const auto& p : iRoutePointArray)
+        {
+        CartoType::TRoutePoint rp;
+        rp = p.iPoint;
+        cs.iRoutePointArray.push_back(rp);
+        }
 
     CartoType::TResult error = 0;
-    if (iBestRoute && cs.iCount > 3)
+    if (iBestRoute && cs.iRoutePointArray.size() > 3)
         {
         CartoType::TRouteProfile profile(iRouteProfileType);
-        size_t iterations = cs.iCount * cs.iCount;
+        size_t iterations = cs.iRoutePointArray.size() * cs.iRoutePointArray.size();
         if (iterations < 16)
             iterations = 16;
         else if (iterations > 256)
             iterations = 256;
-        auto r = iFramework->CreateBestRoute(error,profile,cs,CartoType::TCoordType::Map,true,true,iterations);
+        auto r = iFramework->CreateBestRoute(error,profile,cs,true,true,iterations);
         if (!error)
             error = iFramework->UseRoute(*r,true);
         }
     else
-        error = iFramework->StartNavigation(cs,CartoType::TCoordType::Map);
+        error = iFramework->StartNavigation(cs);
     if (error)
         {
         CCartoTypeDemoApp* app = (CCartoTypeDemoApp*)AfxGetApp();
@@ -551,13 +554,41 @@ void CCartoTypeDemoView::OnRButtonUp(UINT nFlags, CPoint point)
     CRouteDialog route_dialog(pushpin != nullptr);
     if (pushpin)
         route_dialog.iButtonIndex = 2;
-    else if (iRoutePointArray[0].iPoint == CartoType::TPointFP())
+    else if (iRoutePointArray[0].iPoint.iPoint == CartoType::TPointFP())
         route_dialog.iButtonIndex = 0;
     else
         route_dialog.iButtonIndex = 1;
     route_dialog.iBestRoute = iBestRoute;
 
     SetString(route_dialog.iAddress,address_string);
+
+    // Convert the point clicked on to map coords.
+    CartoType::TRoutePoint rp;
+    rp.iPoint.iX = point.x;
+    rp.iPoint.iY = point.y;
+    iFramework->ConvertPoint(rp.iPoint.iX,rp.iPoint.iY,CartoType::TCoordType::Display,CartoType::TCoordType::Map);
+
+    // Set the heading to that of the nearest road.
+    CartoType::TNearestRoadInfo info;
+    error = iFramework->FindNearestRoad(info,rp.iPoint.iX,rp.iPoint.iY,CartoType::TCoordType::Map,-1,CartoType::TLocationMatchParam(),false);
+    static const char* compass_points[16] =
+        { "n", "nne", "ne", "ene", "e", "ese", "se", "sse", "s", "ssw", "sw", "wsw", "w", "wnw", "nw", "nnw" };
+    double d = 0;
+    info.iHeadingInDegrees += 11.25;
+    if (info.iHeadingInDegrees < 0)
+        info.iHeadingInDegrees += 360;
+    else if (info.iHeadingInDegrees > 360)
+        info.iHeadingInDegrees -= 360;
+    if (!error)
+        for (const auto& p : compass_points)
+            {
+            if (info.iHeadingInDegrees >= d && info.iHeadingInDegrees < d + 22.5)
+                {
+                SetString(route_dialog.iHeading,p);
+                break;
+                }
+            d += 22.5;
+            }
 
     CartoType::uint64 pushpin_id = 0;
     if (pushpin)
@@ -582,20 +613,42 @@ void CCartoTypeDemoView::OnRButtonUp(UINT nFlags, CPoint point)
     // Stop any route fly-through.
     StopFlyThrough();
 
+    // Get the heading if any.
+    CartoType::CString h;
+    SetString(h,route_dialog.iHeading);
+    h.SetCase(CartoType::TLetterCase::Lower);
+    d = 0;
+    for (const auto& p : compass_points)
+        {
+        if (h == p)
+            {
+            rp.iHeading = d;
+            rp.iHeadingKnown = true;
+            break;
+            }
+        d += 22.5;
+        }
+    if (!rp.iHeadingKnown && h.Length())
+        {
+        size_t length = 0;
+        h.ToDouble(d,length);
+        if (length == h.Length())
+            {
+            rp.iHeading = d;
+            rp.iHeadingKnown = true;
+            }
+        }
+
     bool create_route = false;
     iBestRoute = route_dialog.iBestRoute != 0;
     if (route_dialog.iButtonIndex == 0) // set start of route
         {
-        CartoType::TPointFP p(point.x,point.y);
-        iFramework->ConvertPoint(p.iX,p.iY,CartoType::TCoordType::Display,CartoType::TCoordType::Map);
-        iRoutePointArray[0].iPoint = p;
+        iRoutePointArray[0].iPoint = rp;
         create_route = true;
         }
     else if (route_dialog.iButtonIndex == 1) // set end of route
         {
-        CartoType::TPointFP p(point.x,point.y);
-        iFramework->ConvertPoint(p.iX,p.iY,CartoType::TCoordType::Display,CartoType::TCoordType::Map);
-        iRoutePointArray[iRoutePointArray.size() - 1].iPoint = p;
+        iRoutePointArray[iRoutePointArray.size() - 1].iPoint = rp;
         create_route = true;
         }
     else if (route_dialog.iButtonIndex == 2) // add or change a pushpin
@@ -619,9 +672,8 @@ void CCartoTypeDemoView::OnRButtonUp(UINT nFlags, CPoint point)
             }
         else
             {
-            x = point.x;
-            y = point.y;
-            iFramework->ConvertPoint(x,y,CartoType::TCoordType::Display,CartoType::TCoordType::Map);
+            x = rp.iPoint.iX;
+            y = rp.iPoint.iY;
             }
         CartoType::TTextLiteral(layer,u"pushpin");
         iFramework->InsertPointMapObject(iWritableMapHandle,layer,x,y,CartoType::TCoordType::Map,string_attrib,0,pushpin_id,true);
@@ -641,12 +693,13 @@ void CCartoTypeDemoView::OnRButtonUp(UINT nFlags, CPoint point)
                 }
             if (waypoint)
                 {
-                waypoint->iPoint.iX = x;
-                waypoint->iPoint.iY = y;
+                waypoint->iPoint = rp;
+                waypoint->iPoint.iPoint.iX = x;
+                waypoint->iPoint.iPoint.iY = y;
                 waypoint->iId = pushpin_id;
                 create_route = true;
                 }
-            }   
+            }  
 
         iWritableMapChanged = true;
         }
@@ -664,8 +717,8 @@ void CCartoTypeDemoView::OnRButtonUp(UINT nFlags, CPoint point)
         iWritableMapChanged = true;
         }
 
-    if (iRoutePointArray[0].iPoint == CartoType::TPointFP() ||
-        iRoutePointArray[iRoutePointArray.size() - 1].iPoint == CartoType::TPointFP())
+    if (iRoutePointArray[0].iPoint.iPoint == CartoType::TPointFP() ||
+        iRoutePointArray[iRoutePointArray.size() - 1].iPoint.iPoint == CartoType::TPointFP())
         create_route = false;
 
     if (create_route)
@@ -1158,6 +1211,13 @@ void CCartoTypeDemoView::OnFileOpenInCurrentMap()
         CCartoTypeDemoApp* app = (CCartoTypeDemoApp*)AfxGetApp();
         app->ShowError(_TEXT("failed to load map"),error);
         }
+
+    if (iMapRenderer)
+        {
+        iMapRenderer = nullptr;
+        iMapRenderer = std::make_unique<CartoType::CMapRenderer>(*iFramework,m_hWnd);
+        }
+
     if (error == CartoType::KErrorNone)
         Update();
     }
@@ -1730,8 +1790,8 @@ void CCartoTypeDemoView::SetProfile(CartoType::TRouteProfileType aProfileType)
     if (!iUseGradients)
         p.iGradientFlags = 0;
     iFramework->SetMainProfile(p);
-    if (iRoutePointArray[0].iPoint != CartoType::TPointFP() &&
-        iRoutePointArray[iRoutePointArray.size() - 1].iPoint != CartoType::TPointFP())
+    if (iRoutePointArray[0].iPoint.iPoint != CartoType::TPointFP() &&
+        iRoutePointArray[iRoutePointArray.size() - 1].iPoint.iPoint != CartoType::TPointFP())
         CalculateAndDisplayRoute();
     }
 
