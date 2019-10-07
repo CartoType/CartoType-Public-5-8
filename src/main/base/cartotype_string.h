@@ -759,6 +759,17 @@ class TAbbreviationInfo
     int32_t iUpperTitleCaseExceptionCount;
     };
 
+/** A key-value pair; often referred to as a tag. */
+class CTag
+    {
+    public:
+    CTag() { }
+    CTag(const MString& aKey,const MString& aValue): m_key(aKey), m_value(aValue) { }
+
+    CString m_key;
+    CString m_value;
+    };
+
 const TAbbreviationInfo* AbbreviationInfo(const char* aLocale);
 CString CountryToCode(const MString& aCountry);
 CString CodeToCountry(const MString& aCode);

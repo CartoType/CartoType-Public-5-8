@@ -1,6 +1,6 @@
 /*
-CARTOTYPE_GRAPHICS_CONTEXT.H
-Copyright (C) 2004-2018 CartoType Ltd.
+cartotype_graphics_context.h
+Copyright (C) 2004-2019 CartoType Ltd.
 See www.cartotype.com for more information.
 */
 
@@ -327,6 +327,52 @@ class CTransformedPath: public MPath
     private:
     std::vector<TOutlinePoint> iPoint;
     std::vector<TContour> iContour;
+    };
+
+/** The data for a typeface is either a filename or a pointer to memory. */
+class TTypefaceData
+    {
+    public:
+    TTypefaceData() = default;
+
+    /** Creates a typeface data object representing a filename. */
+    explicit TTypefaceData(const MString& aName):
+        iName(aName)
+        {
+        }
+
+    /** Creates a typeface data object representing a filename in UTF-8. */
+    explicit TTypefaceData(const char* aName):
+        iName(aName)
+        {
+        }
+
+    /**
+    Creates a typeface data object for data in memory. If aCopyData is true
+    the data is copied, otherwise only the pointer is stored.
+    */
+    TTypefaceData(const uint8* aData,size_t aLength,bool aCopyData):
+        iData(aData),
+        iLength(aLength)
+        {
+        assert(aData != nullptr);
+        if (aCopyData)
+            {
+            iOwnData = std::make_shared<std::vector<uint8>>(aLength);
+            memcpy(iOwnData->data(),aData,aLength);
+            iData = iOwnData->data();
+            }
+        }
+
+    bool InMemory() const { return iData != nullptr; }
+    const MString& Name() const { return iName; }
+    void GetData(const uint8*& aData,size_t& aLength) const { aData = iData; aLength = iLength; }
+
+    private:
+    CString iName;
+    const uint8* iData = nullptr;
+    std::shared_ptr<std::vector<uint8>> iOwnData;
+    size_t iLength = 0;
     };
 
 /**

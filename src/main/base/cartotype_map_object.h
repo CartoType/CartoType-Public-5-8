@@ -26,6 +26,9 @@ class TBitmap;
 /** A type for arrays of map objects returned by search functions. */
 using CMapObjectArray = std::vector<std::unique_ptr<CMapObject>>;
 
+/** A type for internal functionsa to handle objects returned by search functions. */
+using FindHandler = std::function<bool(std::unique_ptr<CMapObject>)>;
+
 /** A group of map objects with the same name returned by a search function. */
 class CMapObjectGroup
     {

@@ -86,8 +86,12 @@ class TFindParam
     CString iCondition;
     /** If iMerge is true (the default), adjoining objects with the same name and attributes may be merged into a single object. */
     bool iMerge = true;
+    /**
+    The maximum time in seconds allowed for a find operation. Find operations are not guaranteed to
+    return in this time or less, but will attempt to do so.
+    */
+    double iTimeOut = 0.5;
     };
-
 
 }
 

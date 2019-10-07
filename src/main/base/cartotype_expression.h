@@ -177,7 +177,8 @@ enum class TExpressionOpType
     EqualFuzzy,
     EqualWild,
 
-    Concat
+    Concat,
+    Subscript
     };
 
 /**
@@ -260,16 +261,16 @@ class MVariableDictionary
     virtual ~MVariableDictionary() { }
 
     /** Get the value of a variable from its name. */
-    virtual bool Find(const MString& aName,TExpressionValue& aValue) const = 0;
+    virtual bool Find(const MString& aName,TExpressionValue& aValue,const size_t* aSubscriptArray,size_t aSubscriptCount) const = 0;
     /** Get the value of a variable from its index. */
-    virtual bool Find(int32_t aIndex,TExpressionValue& aValue) const = 0;
+    virtual bool Find(int32_t aIndex,TExpressionValue& aValue,const size_t* aSubscriptArray,size_t aSubscriptCount) const = 0;
     };
 
 /** A simple implementation of a variable dictionary. */
 class CVariableDictionary: public MVariableDictionary
     {
     public:
-    bool Find(const MString& aKey,TExpressionValue& aValue) const override
+    bool Find(const MString& aKey,TExpressionValue& aValue,const size_t* /*aSubscriptArray*/,size_t /*aSubscriptCount*/) const override
         {
         auto p = iDictionary.find(aKey);
         if (p != iDictionary.end())
@@ -280,7 +281,7 @@ class CVariableDictionary: public MVariableDictionary
         else
             return false;
         }
-    bool Find(int32_t /*aIndex*/,TExpressionValue& /*aValue*/) const override
+    bool Find(int32_t /*aIndex*/,TExpressionValue& /*aValue*/,const size_t* /*aSubscriptArray*/,size_t /*aSubscriptCount*/) const override
         {
         return false;
         }

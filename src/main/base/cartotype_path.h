@@ -22,6 +22,7 @@ class CMarker;
 class TCircularPen;
 class CProjection;
 class TClipRegion;
+class TTransformFP;
 
 enum class TClipType
     {
@@ -93,6 +94,7 @@ class MPath
     COutline FlatPath(double aMaxDistance) const;
     COutline TruncatedPath(double aStart,double aEnd) const;
     COutline OffsetPath(double aOffset) const;
+    COutline TransformedPath(const TTransformFP& aTransform) const;
     TResult GetHorizontalPath(int32_t aDesiredWidth,TLine& aLine,const TRect* aBounds = nullptr,const TRect* aClip = nullptr) const;
     TPointFP CenterOfGravity() const;
     void GetCenterOfGravity(TPoint& aCenter) const;
@@ -772,8 +774,8 @@ class TClipRegion
 
     private:
     TRect m_bounds;             // the bounds of the clip region as an axis-aligned rectangle
-    COutline m_path;            // the clip path path; empty if m_is_rect is true
-    bool m_is_rect = true;     // true if the clip region is an axis-aligned rectangle
+    COutline m_path;            // the clip path
+    bool m_is_rect = true;      // true if the clip region is an axis-aligned rectangle
     };
 
 }

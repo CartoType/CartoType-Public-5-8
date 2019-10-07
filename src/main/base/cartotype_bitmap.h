@@ -101,6 +101,7 @@ class TBitmap
     CBitmap UnPalettize() const;
     CBitmap Trim(TRect& aBounds,bool aTrimLeft = true,bool aTrimRight = true,bool aTrimTop = true,bool aTrimBottom = true) const;
     CBitmap Clip(TRect aClip) const;
+    CBitmap Clip(const MPath& aPath,TRect& aNewBounds) const;
     TResult WritePng(MOutputStream& aOutputStream,bool aPalettize) const;
     TResult Write(TDataOutputStream& aOutput) const;
 

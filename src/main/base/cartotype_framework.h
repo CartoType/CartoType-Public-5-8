@@ -104,6 +104,7 @@ class CFrameworkEngine
     {
     public:
     static std::unique_ptr<CFrameworkEngine> New(TResult& aError,const CString& aFontFileName,int32_t aFileBufferSizeInBytes = 0,int32_t aMaxFileBufferCount = 0,int32_t aTextIndexLevels = 0);
+    static std::unique_ptr<CFrameworkEngine> New(TResult& aError,const std::vector<TTypefaceData>& aTypefaceDataArray,int32_t aFileBufferSizeInBytes = 0,int32_t aMaxFileBufferCount = 0,int32_t aTextIndexLevels = 0);
     ~CFrameworkEngine();
     TResult Configure(const CString& aFilename);
     TResult LoadFont(const CString& aFontFileName);
@@ -123,7 +124,7 @@ class CFrameworkEngine
 
     std::shared_ptr<CEngine> iEngine;
     CString iConfigFileName;
-    std::vector<CString> iFontFileName;
+    std::vector<TTypefaceData> iTypefaceDataArray;
     int32_t iFileBufferSizeInBytes;
     int32_t iMaxFileBufferCount;
     int32_t iTextIndexLevels;
@@ -350,7 +351,7 @@ class CFramework: public MNavigatorObserver
         CString iStyleSheetFileName;
         /** The style sheet text; used if iStyleSheetFileName is empty. */
         std::string iStyleSheetText;
-        /** The first font file. Must not be empty. */
+        /** The first font file. If this is empty, a small built-in font is loaded containing the Roman script only. */
         CString iFontFileName;
         /** The width of the initial map in pixels. Must be greater than zero. */
         int32_t iViewWidth = 256;

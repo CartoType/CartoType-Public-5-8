@@ -155,6 +155,10 @@ template<class T> class TPoint2
         {
         return CrossProduct(aPoint) < 0;
         }
+    TPoint Rounded() const noexcept
+        {
+        return TPoint((int32_t)(iX < 0.0 ? iX - 0.5 : iX + 0.5),(int32_t)(iY < 0.0 ? iY - 0.5 : iY + 0.5));
+        }
 
     /** The x coordinate. */
     T iX { 0 };
